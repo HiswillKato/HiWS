@@ -9,6 +9,10 @@ declare(strict_types=1);
    a page than to require this one file and then print.
    ========================================================================= */
 
+/* Composer's autoloader, so the two libraries vendor/ holds — Parsedown for the
+   explainers and libphonenumber for the phone tool — are found by name. */
+require __DIR__ . '/../vendor/autoload.php';
+
 require __DIR__ . '/config.php';
 require __DIR__ . '/db.php';
 require __DIR__ . '/functions.php';

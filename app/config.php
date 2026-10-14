@@ -23,6 +23,10 @@ define('SITE_FULL_NAME', 'Hiswill Web Stack');
 define('SITE_TAGLINE', 'Free web projects and tools for everyone');
 define('SITE_YEAR', 2022);            /* the year the first HiWS project went up */
 
+/* The words every page carries unless it names its own. A tool page passes
+   its row's keywords instead, which is what that column is for. */
+define('SITE_KEYWORDS', 'hiws, hiswill web stack, hiswill kato, free web tools, online bible, free web projects, developer tools, uganda');
+
 /* The real public address. Used for canonical links and the sitemap only;
    the site itself answers to whatever name the visitor typed. */
 define('SITE_DOMAIN', 'hiws.eu.org');
@@ -71,11 +75,29 @@ define('MAIL_ADMIN', 'admin@mail.local');
 define('MAIL_SUBJECT_PREFIX', '[' . SITE_NAME . '] ');
 
 /* -------------------------------------------------------------------------
-   6. Housekeeping
+   6. The Bible
+
+   /bible reads the `bible` table, one row per verse per translation. The
+   keys here are the values in `bible.version`; the labels are what the
+   switcher shows. Both texts are public domain, which is what lets the site
+   republish them.
+   ------------------------------------------------------------------------- */
+
+define('BIBLE_VERSIONS', ['KJV' => 'King James Version', 'WEB' => 'World English Bible']);
+define('BIBLE_DEFAULT', 'KJV');
+
+/* -------------------------------------------------------------------------
+   7. Housekeeping
    ------------------------------------------------------------------------- */
 
 /* true while working on the site, so PHP shows every error on screen. */
 define('SHOW_ERRORS', false);
 
-/* Items shown per page on any listing (tools, projects). */
-define('PER_PAGE', 12);
+/* Verses shown per page of Bible search results. */
+define('PER_PAGE', 20);
+
+/* Seconds a tool waits for another machine before giving up and saying so.
+   The web server abandons a page at sixty seconds, so this is sized for the
+   whole page rather than one call: the shortener tries three services, and
+   three waits still leave the page time to answer instead of dying as a 504. */
+define('WAIT', 12);

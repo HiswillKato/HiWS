@@ -46,7 +46,7 @@ require __DIR__ . '/app/parts/header.php';
                 <div class="card h-100 shadow-sm">
                     <div class="card-body d-flex flex-column">
                         <span class="badge bg-primary-subtle text-primary-emphasis rounded-3 p-3 mb-3 align-self-start fs-5">
-                            <?= icon('fa-solid ' . ($project['icon'] !== '' ? $project['icon'] : 'fa-cube')) ?>
+                            <?= mark($project['icon']) ?>
                         </span>
                         <h3 class="h5 card-title"><?= e($project['name']) ?></h3>
                         <p class="card-text text-body-secondary"><?= e($project['description']) ?></p>

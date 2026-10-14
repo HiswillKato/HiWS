@@ -2,12 +2,19 @@
 /* The masthead and the opening of <main>. A page sets $title before requiring
    this file, and that is the only expectation. */
 $title = $title ?? SITE_NAME;
-$lede  = $lede ?? null;
 
+/* Sections, in the order a visitor meets them. here() compares the path, so a
+   page inside /bible/ lights up the Bible link without naming it here.
+
+   The label and the address are named keys rather than a list, and the loop
+   below walks the keys: a part that spread a list into ordinary variables
+   would leave the page's own variables holding the last one it read. */
 $nav = [
-    'index'   => ['Home', url()],
-    'about'   => ['About', url('about')],
-    'contact' => ['Contact', url('contact')],
+    'index'   => ['label' => 'Home', 'at' => url()],
+    'bible'   => ['label' => 'Bible', 'at' => url('bible')],
+    'tools'   => ['label' => 'Tools', 'at' => url('tools')],
+    'about'   => ['label' => 'About', 'at' => url('about')],
+    'contact' => ['label' => 'Contact', 'at' => url('contact')],
 ];
 ?>
 <!doctype html>
@@ -16,12 +23,15 @@ $nav = [
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?> &middot; <?= e(SITE_FULL_NAME) ?></title>
-<meta name="description" content="<?= e(SITE_FULL_NAME . ' — ' . SITE_TAGLINE) ?>">
-<meta name="keywords" content="hiws, hiswill web stack, hiswill, free web services, free web projects, web tools, online bible">
+<meta name="description" content="<?= e($description ?? SITE_FULL_NAME . ' — ' . SITE_TAGLINE) ?>">
+<meta name="keywords" content="<?= e($keywords ?? SITE_KEYWORDS) ?>">
 <meta name="author" content="Hiswill Kato">
 <meta name="theme-color" content="#0d6efd">
-<?php $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? 'index.php'), '.php'); ?>
-<link rel="canonical" href="<?= e($script === 'index' ? url() : url($script)) ?>">
+<?php /* The address as typed, without its query, so /tools/hash and
+     /bible/john/3 each name themselves rather than their script. A trailing
+     slash is dropped, because /tools and /tools/ are one page. */ ?>
+<?php $path = trim((string) strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?'), '/'); ?>
+<link rel="canonical" href="<?= e(url($path)) ?>">
 <link rel="icon" href="<?= asset('images/favicon.svg') ?>" type="image/svg+xml">
 <link rel="stylesheet" href="<?= asset('css/bootstrap.min.css') ?>">
 <link rel="stylesheet" href="<?= asset('css/all.min.css') ?>">
@@ -48,10 +58,10 @@ $nav = [
 
         <div class="collapse navbar-collapse" id="menu">
             <ul class="navbar-nav ms-auto">
-                <?php foreach ($nav as $page => [$label, $link]): ?>
+                <?php foreach (array_keys($nav) as $key): ?>
                 <li class="nav-item">
-                    <a class="nav-link<?= here($page) ? ' active' : '' ?>" href="<?= e($link) ?>"
-                       <?= here($page) ? 'aria-current="page"' : '' ?>><?= e($label) ?></a>
+                    <a class="nav-link<?= here($key) ? ' active' : '' ?>" href="<?= e($nav[$key]['at']) ?>"
+                       <?= here($key) ? 'aria-current="page"' : '' ?>><?= e($nav[$key]['label']) ?></a>
                 </li>
                 <?php endforeach; ?>
             </ul>

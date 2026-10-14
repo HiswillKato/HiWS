@@ -83,3 +83,13 @@
     backdrop-filter: saturate(160%) blur(8px);
     background-color: rgba(var(--bs-body-bg-rgb), .85) !important;
 }
+
+/* ---------------------------------------------------------------------------
+   4. One more piece Bootstrap has no primitive for: a window for text that can
+   run to thousands of lines — source code, headers, a whois answer. It scrolls
+   instead of stretching the page.
+   --------------------------------------------------------------------------- */
+.code-window {
+    max-height: 34rem;
+    overflow: auto;
+}

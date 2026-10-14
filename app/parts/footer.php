@@ -27,6 +27,8 @@ $legal = [
                 <h2 class="h6 text-uppercase text-body-secondary">Explore</h2>
                 <ul class="list-unstyled mb-0">
                     <li><a class="link-body-emphasis text-decoration-none" href="<?= url() ?>">Home</a></li>
+                    <li><a class="link-body-emphasis text-decoration-none" href="<?= url('bible') ?>">Bible</a></li>
+                    <li><a class="link-body-emphasis text-decoration-none" href="<?= url('tools') ?>">Tools</a></li>
                     <li><a class="link-body-emphasis text-decoration-none" href="<?= url('about') ?>">About</a></li>
                     <li><a class="link-body-emphasis text-decoration-none" href="<?= url('contact') ?>">Contact</a></li>
                 </ul>
@@ -35,8 +37,10 @@ $legal = [
             <div class="col-6 col-lg-3">
                 <h2 class="h6 text-uppercase text-body-secondary">Legal</h2>
                 <ul class="list-unstyled mb-0">
-                    <?php foreach ($legal as $page => $label): ?>
-                    <li><a class="link-body-emphasis text-decoration-none" href="<?= url($page) ?>"><?= $label ?></a></li>
+                    <?php /* Walked by key, so the loop leaves nothing of its own
+                         behind in a page that has already been rendered. */ ?>
+                    <?php foreach (array_keys($legal) as $key): ?>
+                    <li><a class="link-body-emphasis text-decoration-none" href="<?= url($key) ?>"><?= $legal[$key] ?></a></li>
                     <?php endforeach; ?>
                 </ul>
             </div>

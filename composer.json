@@ -1,0 +1,17 @@
+{
+    "name": "hiswillkato/hiws",
+    "description": "HiWS — Hiswill Web Stack: free web tools and an online Bible.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.3",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "erusev/parsedown": "^1.7",
+        "giggsey/libphonenumber-for-php": "^8.13"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

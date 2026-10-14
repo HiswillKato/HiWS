@@ -13,6 +13,12 @@
 DirectoryIndex index.php
 Options -Indexes
 
+# A real folder such as /tools or /bible would otherwise answer /tools with a
+# redirect to /tools/ — one extra hop, and two addresses for one page. Every
+# folder here is reached through a rewrite anyway, so the slash Apache would
+# add is nothing the site needs.
+DirectorySlash Off
+
 RewriteEngine On
 RewriteBase /
 
@@ -24,6 +30,12 @@ RewriteBase /
 # mod_rewrite, so denying the folder costs the site nothing.
 RewriteRule ^app(?:/|$) - [F,L]
 
+# vendor/ is third-party code and database/ holds the importer — a shell
+# script that has no business answering a request. Both are require()d or run
+# from the command line, and neither passes through mod_rewrite.
+RewriteRule ^vendor(?:/|$) - [F,L]
+RewriteRule ^database(?:/|$) - [F,L]
+
 # Documentation and data. Named explicitly because these are the ones most
 # likely to be typed into a browser by mistake.
 RewriteRule \.(?:md|sql|log|ini|sh|bak|lock|swp|dist)$ - [F,L]
@@ -32,7 +44,33 @@ RewriteRule ^\.env$ - [F,L]
 RewriteRule ^\.(?!well-known) - [F,L]
 
 # --------------------------------------------------------------------------
-# 2. SHORT ADDRESSES FOR THE FLAT PAGES
+# 2. THE SUB-APPS: /tools AND /bible
+# --------------------------------------------------------------------------
+# /tools/<name> is a file per tool. The file has to exist — checked with a
+# condition, not left to the rewrite — because under PHP-FPM a rewrite to a
+# file that is not there answers with a bare "File not found." and never
+# reaches ErrorDocument. A name with no file falls through to the 404.
+RewriteCond %{DOCUMENT_ROOT}/tools/$1.php -f
+RewriteRule ^tools/([A-Za-z0-9-]+)/?$ tools/$1.php [L]
+RewriteRule ^tools/?$ tools/index.php [L]
+
+# /bible — the four named pages first, so that "search" is a page and not a
+# book. QSA keeps ?v=KJV|WEB, which is how the translation switcher follows a
+# reader from one page to the next.
+RewriteRule ^bible/search/?$ bible/search.php [L,QSA]
+RewriteRule ^bible/facts/?$  bible/facts.php  [L,QSA]
+RewriteRule ^bible/jics/?$   bible/jics.php   [L,QSA]
+RewriteRule ^bible/?$        bible/index.php  [L,QSA]
+
+# /bible/<Book>[/<Chapter>[/<Verse>]] — a name as short as "john" and as long
+# as "song-of-solomon" reaches read.php as a query value, which is what the
+# reads in data.php expect. The verse is optional and simply highlights.
+RewriteRule ^bible/([A-Za-z0-9-]+)/?$ bible/read.php?book=$1 [L,QSA]
+RewriteRule ^bible/([A-Za-z0-9-]+)/([0-9]+)/?$ bible/read.php?book=$1&chapter=$2 [L,QSA]
+RewriteRule ^bible/([A-Za-z0-9-]+)/([0-9]+)/([0-9]+)/?$ bible/read.php?book=$1&chapter=$2&verse=$3 [L,QSA]
+
+# --------------------------------------------------------------------------
+# 3. SHORT ADDRESSES FOR THE FLAT PAGES
 # --------------------------------------------------------------------------
 # /about -> about.php, but only when nothing real lives at that name, so
 # assets/css/style.css and the folders beneath it are left alone. The target
@@ -46,6 +84,6 @@ RewriteCond %{DOCUMENT_ROOT}/$1.php -f
 RewriteRule ^([a-z][a-z0-9-]*)/?$ $1.php [L]
 
 # --------------------------------------------------------------------------
-# 3. POLITE ERRORS
+# 4. POLITE ERRORS
 # --------------------------------------------------------------------------
 ErrorDocument 404 /404.php
