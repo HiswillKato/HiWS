@@ -1,0 +1,10 @@
+# Belt and braces. The root .htaccess already refuses app/, but this folder
+# holds config.php — the database account — so it refuses to run as a script
+# even if the folder is ever copied somewhere that is served on its own.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

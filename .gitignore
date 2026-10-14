@@ -1,0 +1,7 @@
+# Files that belong to this machine, not to the repository.
+.DS_Store
+*.swp
+
+# Runtime noise
+/error_log
+/php_errors.log

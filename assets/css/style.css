@@ -1,0 +1,85 @@
+/* ============================================================================
+   HiWS — Hiswill Web Stack
+   A thin layer on top of Bootstrap 5.3.3.
+
+   Nothing here re-creates a Bootstrap component. The colours, radii and
+   shadows are published as --bs-* tokens, so every built-in (btn, card,
+   badge, alert, list-group, form-control, navbar…) picks up the brand on its
+   own and the only custom classes left are the few colour helpers the markup
+   asks for by name.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. The typeface. Plus Jakarta Sans ships as one variable file, so a single
+   face covers every weight and the browser never fakes a bold.
+   --------------------------------------------------------------------------- */
+@font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../webfonts/plus-jakarta-sans-latin.woff2') format('woff2');
+}
+
+/* ---------------------------------------------------------------------------
+   2. Design tokens. Rebranding the site is a change to this block alone.
+   --------------------------------------------------------------------------- */
+:root {
+    color-scheme: light;
+
+    --bs-font-sans-serif: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --bs-body-font-family: var(--bs-font-sans-serif);
+    --bs-body-line-height: 1.65;
+
+    /* Surfaces */
+    --bs-body-bg: #ffffff;
+    --bs-body-bg-rgb: 255, 255, 255;
+    --bs-tertiary-bg: #f6f7fb;
+    --bs-tertiary-bg-rgb: 246, 247, 251;
+    --bs-body-color: #1b2033;
+    --bs-body-color-rgb: 27, 32, 51;
+    --bs-heading-color: #131829;
+    --bs-secondary-color: rgba(27, 32, 51, .66);
+    --bs-border-color: #e4e7f0;
+    --bs-border-color-translucent: rgba(27, 32, 51, .08);
+
+    /* Brand — a deep indigo that reads as "stack of layers" */
+    --bs-primary: #3b46c4;
+    --bs-primary-rgb: 59, 70, 196;
+    --bs-primary-text-emphasis: #262f8c;
+    --bs-primary-bg-subtle: #e9ebfb;
+    --bs-primary-border-subtle: #c9cdf4;
+    --bs-link-color: #3b46c4;
+    --bs-link-color-rgb: 59, 70, 196;
+    --bs-link-hover-color: #262f8c;
+    --bs-link-hover-color-rgb: 38, 47, 140;
+
+    /* Shape and depth */
+    --bs-border-radius: .6rem;
+    --bs-border-radius-sm: .45rem;
+    --bs-border-radius-lg: .9rem;
+    --bs-border-radius-xl: 1.2rem;
+    --bs-box-shadow-sm: 0 1px 2px rgba(19, 24, 41, .06), 0 4px 14px rgba(19, 24, 41, .05);
+    --bs-focus-ring-color: rgba(59, 70, 196, .35);
+}
+
+/* ---------------------------------------------------------------------------
+   3. The only bespoke pieces, and each one is a thing Bootstrap has no
+   primitive for: the brand mark, and the quiet sticky navbar.
+   --------------------------------------------------------------------------- */
+.brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    color: #fff;
+    background: linear-gradient(135deg, var(--bs-primary), #6d7bff);
+    border-radius: .7rem;
+    box-shadow: var(--bs-box-shadow-sm);
+}
+
+.sticky-top.navbar {
+    backdrop-filter: saturate(160%) blur(8px);
+    background-color: rgba(var(--bs-body-bg-rgb), .85) !important;
+}

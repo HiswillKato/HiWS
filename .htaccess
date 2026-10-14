@@ -1,0 +1,51 @@
+# ==========================================================================
+# HiWS — root .htaccess
+#
+# Two jobs, in order:
+#   1. Keep the machinery off the web — app/ (the database account), the
+#      schema file and the docs are readable from disk but never served.
+#   2. Give every page a short address: /about instead of /about.php.
+#
+# Rules run top to bottom and the first match wins, so the deny list has to
+# sit above the "this file really exists, let it through" rule at the bottom.
+# ==========================================================================
+
+DirectoryIndex index.php
+Options -Indexes
+
+RewriteEngine On
+RewriteBase /
+
+# --------------------------------------------------------------------------
+# 1. NEVER SERVED OVER HTTP
+# --------------------------------------------------------------------------
+# app/ holds config.php, which carries the database account, and the shared
+# page parts. Every page require()s them, and a require never passes through
+# mod_rewrite, so denying the folder costs the site nothing.
+RewriteRule ^app(?:/|$) - [F,L]
+
+# Documentation and data. Named explicitly because these are the ones most
+# likely to be typed into a browser by mistake.
+RewriteRule \.(?:md|sql|log|ini|sh|bak|lock|swp|dist)$ - [F,L]
+RewriteRule ^composer\.(?:json|lock)$ - [F,L]
+RewriteRule ^\.env$ - [F,L]
+RewriteRule ^\.(?!well-known) - [F,L]
+
+# --------------------------------------------------------------------------
+# 2. SHORT ADDRESSES FOR THE FLAT PAGES
+# --------------------------------------------------------------------------
+# /about -> about.php, but only when nothing real lives at that name, so
+# assets/css/style.css and the folders beneath it are left alone. The target
+# is tested rather than REQUEST_FILENAME so a trailing slash (/about/) still
+# resolves. Under the PHP-FPM proxy a rewrite to a file that is not there
+# would answer with a bare "File not found." and skip ErrorDocument, which is
+# why the existence check is not optional.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/$1.php -f
+RewriteRule ^([a-z][a-z0-9-]*)/?$ $1.php [L]
+
+# --------------------------------------------------------------------------
+# 3. POLITE ERRORS
+# --------------------------------------------------------------------------
+ErrorDocument 404 /404.php
