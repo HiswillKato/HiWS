@@ -1,17 +1,27 @@
 /* ============================================================================
    HiWS — Hiswill Web Stack
-   A thin layer on top of Bootstrap 5.3.3.
+   The "Aurora" look, ported from the sibling site hika and laid on Bootstrap
+   5.3.3 primitives. Dark by default; on a first visit the visitor's system
+   decides, and the switch in the masthead remembers whatever they choose.
 
-   Nothing here re-creates a Bootstrap component. The colours, radii and
-   shadows are published as --bs-* tokens, so every built-in (btn, card,
-   badge, alert, list-group, form-control, navbar…) picks up the brand on its
-   own and the only custom classes left are the few colour helpers the markup
-   asks for by name.
+   Nothing here rebuilds a Bootstrap component. Colours, radii and shadows are
+   published as --bs-* tokens, so every built-in picks up the brand on its own.
+   The bespoke classes are only the pieces Bootstrap has no primitive for:
+     · the brand mark and the quiet button (.brand-mark, .btn-ghost)
+     · the accents (.eyebrow, .aurora, .hero-name, .mono)
+     · the code window the long tool answers scroll inside
+     · the reveal-on-scroll motion
+
+   One token is HiWS's own. `bg-body` reads --bs-body-bg, and the markup puts
+   that utility on every card, so here --bs-body-bg is the PANEL surface and
+   --page is the shade the <body> itself paints. Rebranding the site is a
+   change to the :root block alone.
    ========================================================================== */
 
 /* ---------------------------------------------------------------------------
-   1. The typeface. Plus Jakarta Sans ships as one variable file, so a single
-   face covers every weight and the browser never fakes a bold.
+   1. Fonts. Plus Jakarta Sans for the body, Fraunces for the one editorial
+   heading, and a monospace stack for the technical details. Every face ships
+   as a local file, so nothing is fetched from a third party.
    --------------------------------------------------------------------------- */
 @font-face {
     font-family: 'Plus Jakarta Sans';
@@ -20,76 +30,466 @@
     font-display: swap;
     src: url('../webfonts/plus-jakarta-sans-latin.woff2') format('woff2');
 }
-
-/* ---------------------------------------------------------------------------
-   2. Design tokens. Rebranding the site is a change to this block alone.
-   --------------------------------------------------------------------------- */
-:root {
-    color-scheme: light;
-
-    --bs-font-sans-serif: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-    --bs-body-font-family: var(--bs-font-sans-serif);
-    --bs-body-line-height: 1.65;
-
-    /* Surfaces */
-    --bs-body-bg: #ffffff;
-    --bs-body-bg-rgb: 255, 255, 255;
-    --bs-tertiary-bg: #f6f7fb;
-    --bs-tertiary-bg-rgb: 246, 247, 251;
-    --bs-body-color: #1b2033;
-    --bs-body-color-rgb: 27, 32, 51;
-    --bs-heading-color: #131829;
-    --bs-secondary-color: rgba(27, 32, 51, .66);
-    --bs-border-color: #e4e7f0;
-    --bs-border-color-translucent: rgba(27, 32, 51, .08);
-
-    /* Brand — a deep indigo that reads as "stack of layers" */
-    --bs-primary: #3b46c4;
-    --bs-primary-rgb: 59, 70, 196;
-    --bs-primary-text-emphasis: #262f8c;
-    --bs-primary-bg-subtle: #e9ebfb;
-    --bs-primary-border-subtle: #c9cdf4;
-    --bs-link-color: #3b46c4;
-    --bs-link-color-rgb: 59, 70, 196;
-    --bs-link-hover-color: #262f8c;
-    --bs-link-hover-color-rgb: 38, 47, 140;
-
-    /* Shape and depth */
-    --bs-border-radius: .6rem;
-    --bs-border-radius-sm: .45rem;
-    --bs-border-radius-lg: .9rem;
-    --bs-border-radius-xl: 1.2rem;
-    --bs-box-shadow-sm: 0 1px 2px rgba(19, 24, 41, .06), 0 4px 14px rgba(19, 24, 41, .05);
-    --bs-focus-ring-color: rgba(59, 70, 196, .35);
+@font-face {
+    font-family: 'Fraunces';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('../webfonts/fraunces-latin.woff2') format('woff2');
 }
 
 /* ---------------------------------------------------------------------------
-   3. The only bespoke pieces, and each one is a thing Bootstrap has no
-   primitive for: the brand mark, and the quiet sticky navbar.
+   2. Tokens — dark by default.
    --------------------------------------------------------------------------- */
-.brand-mark {
+:root {
+    color-scheme: dark;
+
+    --bs-font-sans-serif: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --bs-font-monospace: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+    --bs-body-font-family: var(--bs-font-sans-serif);
+    --bs-body-font-size: 1rem;
+    --bs-body-line-height: 1.7;
+
+    /* The page, a shade deeper than every panel that sits on it. */
+    --page: #070c11;
+    --page-rgb: 7, 12, 17;
+
+    /* Surfaces. --bs-body-bg doubles as the panel colour, because the markup
+       asks for `bg-body` on its cards. */
+    --bs-body-bg: #0e1820;
+    --bs-body-bg-rgb: 14, 24, 32;
+    --surface: #0e1820;
+    --surface-2: #13212b;
+    --bs-body-color: #cddbe4;
+    --bs-body-color-rgb: 205, 219, 228;
+    --bs-heading-color: #eef7fb;
+    /* Pinned, because tables, nav links and list-group hovers all read it and
+       a black value would vanish against these surfaces. */
+    --bs-emphasis-color: #eef7fb;
+    --bs-emphasis-color-rgb: 238, 247, 251;
+    --bs-secondary-color: #8399a8;
+    --bs-secondary: #8399a8;
+    --bs-secondary-rgb: 131, 153, 168;
+    --bs-secondary-bg: #0d161d;
+    --bs-tertiary-bg: #121d26;
+    --bs-border-color: rgba(140, 180, 205, .16);
+    --bs-border-color-translucent: rgba(140, 180, 205, .09);
+
+    /* Brand — aurora mint */
+    --bs-primary: #2ee6a8;
+    --bs-primary-rgb: 46, 230, 168;
+    --bs-primary-text-emphasis: #74f4cb;
+    --bs-primary-bg-subtle: rgba(46, 230, 168, .12);
+    --bs-primary-border-subtle: rgba(46, 230, 168, .32);
+    --on-primary: #04150e;
+    --primary-hover: #26cf98;
+    --primary-active: #21bd8a;
+
+    /* The second accent, used only in gradients. */
+    --sky: #4bb8ff;
+    --sky-rgb: 75, 184, 255;
+
+    --bs-warning: #f4b860;
+    --bs-warning-rgb: 244, 184, 96;
+    --bs-warning-text-emphasis: #f7cd8f;
+    --bs-warning-bg-subtle: rgba(244, 184, 96, .14);
+    --bs-warning-border-subtle: rgba(244, 184, 96, .32);
+
+    --bs-danger: #ff6b6b;
+    --bs-danger-rgb: 255, 107, 107;
+    --bs-success: #2ee6a8;
+    --bs-success-rgb: 46, 230, 168;
+    --bs-info: #4bb8ff;
+    --bs-info-rgb: 75, 184, 255;
+    --bs-dark: #05090d;
+    --bs-dark-rgb: 5, 9, 13;
+
+    --bs-link-color-rgb: var(--bs-primary-rgb);
+    --bs-link-hover-color-rgb: 116, 244, 203;
+    --bs-link-decoration: none;
+    --bs-focus-ring-color: rgba(var(--bs-primary-rgb), .28);
+
+    /* Shape */
+    --bs-border-radius: .75rem;
+    --bs-border-radius-sm: .45rem;
+    --bs-border-radius-lg: 1rem;
+    --bs-border-radius-xl: 1.35rem;
+    --bs-border-radius-xxl: 1.75rem;
+
+    /* Depth */
+    --bs-box-shadow-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px -12px rgba(0, 0, 0, .7);
+    --bs-box-shadow: 0 2px 6px rgba(0, 0, 0, .45), 0 20px 45px -20px rgba(0, 0, 0, .8);
+    --bs-box-shadow-lg: 0 6px 14px rgba(0, 0, 0, .5), 0 36px 70px -30px rgba(0, 0, 0, .85);
+
+    --ease: cubic-bezier(.4, 0, .2, 1);
+    --snap: .18s var(--ease);
+    --focus: 0 0 0 .22rem rgba(var(--bs-primary-rgb), .28);
+}
+
+/* The switch lifts the whole palette rather than dimming it. */
+[data-theme="light"] {
+    color-scheme: light;
+
+    --page: #eef3f6;
+    --page-rgb: 238, 243, 246;
+
+    --bs-body-bg: #ffffff;
+    --bs-body-bg-rgb: 255, 255, 255;
+    --surface: #ffffff;
+    --surface-2: #f1f6f8;
+    --bs-body-color: #1b2b34;
+    --bs-body-color-rgb: 27, 43, 52;
+    --bs-heading-color: #0b1a22;
+    --bs-emphasis-color: #000;
+    --bs-emphasis-color-rgb: 0, 0, 0;
+    --bs-secondary-color: #5d7885;
+    --bs-secondary: #5d7885;
+    --bs-secondary-rgb: 93, 120, 133;
+    --bs-secondary-bg: #f1f6f8;
+    --bs-tertiary-bg: #e6eef2;
+    --bs-border-color: rgba(11, 26, 34, .13);
+    --bs-border-color-translucent: rgba(11, 26, 34, .07);
+
+    --bs-primary: #0f9e73;
+    --bs-primary-rgb: 15, 158, 115;
+    --bs-primary-text-emphasis: #0b7a58;
+    --bs-primary-bg-subtle: #d8f4ea;
+    --bs-primary-border-subtle: #a4e6d1;
+    --on-primary: #ffffff;
+    --primary-hover: #0c8a64;
+    --primary-active: #0a7554;
+
+    --sky: #1586d6;
+    --sky-rgb: 21, 134, 214;
+
+    --bs-warning-text-emphasis: #8a5a12;
+    --bs-warning-bg-subtle: #fdefd5;
+    --bs-warning-border-subtle: #f6d79c;
+
+    --bs-link-color-rgb: 15, 158, 115;
+    --bs-link-hover-color-rgb: 11, 122, 88;
+
+    --bs-box-shadow-sm: 0 1px 2px rgba(11, 26, 34, .06), 0 8px 20px -12px rgba(11, 26, 34, .18);
+    --bs-box-shadow: 0 2px 6px rgba(11, 26, 34, .08), 0 20px 42px -22px rgba(11, 26, 34, .28);
+    --bs-box-shadow-lg: 0 6px 14px rgba(11, 26, 34, .1), 0 34px 64px -30px rgba(11, 26, 34, .34);
+
+    --focus: 0 0 0 .22rem rgba(15, 158, 115, .25);
+}
+
+/* ---------------------------------------------------------------------------
+   3. Base & typography.
+   --------------------------------------------------------------------------- */
+body {
+    min-height: 100vh;
+    background-color: var(--page);
+    background-image:
+        radial-gradient(1100px 560px at 82% -8%, rgba(var(--bs-primary-rgb), .10), transparent 60%),
+        radial-gradient(900px 520px at 0% -4%, rgba(var(--sky-rgb), .08), transparent 55%);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6,
+.display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: var(--bs-heading-color);
+}
+
+.lead { color: var(--bs-secondary-color); }
+hr { opacity: .12; }
+::selection { background: rgba(var(--bs-primary-rgb), .28); }
+.text-body-secondary { color: var(--bs-secondary-color) !important; }
+
+/* The one serif face on the site, kept for the page that introduces the
+   project — a little editorial warmth against all the monospace around it. */
+.hero-name {
+    font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+}
+
+.eyebrow {
+    font-family: var(--bs-font-monospace);
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--bs-primary);
+}
+
+.mono { font-family: var(--bs-font-monospace); }
+
+.aurora {
+    background-image: linear-gradient(100deg, var(--bs-primary), var(--sky) 72%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   4. Links.
+   --------------------------------------------------------------------------- */
+a {
+    text-decoration: none;
+    text-underline-offset: .18em;
+    text-decoration-thickness: .08em;
+    transition: color var(--snap);
+}
+a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link):not(.list-group-item):not(.badge):hover {
+    text-decoration: underline;
+    text-decoration-color: rgba(var(--bs-link-color-rgb), .5);
+}
+
+/* ---------------------------------------------------------------------------
+   5. Buttons. Bootstrap bakes each variant's colours at build time, so
+   .btn-primary is re-skinned by hand; every other button follows the tokens.
+   --------------------------------------------------------------------------- */
+.btn {
+    --bs-btn-font-weight: 600;
+    --bs-btn-border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    color: #fff;
-    background: linear-gradient(135deg, var(--bs-primary), #6d7bff);
-    border-radius: .7rem;
-    box-shadow: var(--bs-box-shadow-sm);
+    gap: .5em;
+    transition: transform var(--snap), box-shadow var(--snap), color var(--snap),
+                background-color var(--snap), border-color var(--snap);
+}
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { box-shadow: var(--focus); }
+
+.btn-primary {
+    --bs-btn-color: var(--on-primary);
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-color: var(--on-primary);
+    --bs-btn-hover-bg: var(--primary-hover);
+    --bs-btn-hover-border-color: var(--primary-hover);
+    --bs-btn-active-color: var(--on-primary);
+    --bs-btn-active-bg: var(--primary-active);
+    --bs-btn-active-border-color: var(--primary-active);
+    --bs-btn-disabled-color: var(--on-primary);
+    --bs-btn-disabled-bg: var(--bs-primary);
+    --bs-btn-disabled-border-color: var(--bs-primary);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+}
+.btn-primary:hover { box-shadow: 0 12px 30px -12px rgba(var(--bs-primary-rgb), .7); }
+
+/* A quiet button that borrows the page surface rather than a colour. */
+.btn-ghost {
+    --bs-btn-color: var(--bs-body-color);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: var(--bs-border-color);
+    --bs-btn-hover-color: var(--bs-primary);
+    --bs-btn-hover-bg: var(--surface-2);
+    --bs-btn-hover-border-color: rgba(var(--bs-primary-rgb), .6);
+    --bs-btn-active-color: var(--bs-primary);
+    --bs-btn-active-bg: var(--surface-2);
+    --bs-btn-active-border-color: rgba(var(--bs-primary-rgb), .6);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
 }
 
-.sticky-top.navbar {
-    backdrop-filter: saturate(160%) blur(8px);
-    background-color: rgba(var(--bs-body-bg-rgb), .85) !important;
+/* The outline pairs are baked too, and they carry the project cards, every
+   copy button and the Bible's chapter arrows, so both are re-skinned. */
+.btn-outline-primary {
+    --bs-btn-color: var(--bs-primary);
+    --bs-btn-border-color: rgba(var(--bs-primary-rgb), .5);
+    --bs-btn-hover-color: var(--on-primary);
+    --bs-btn-hover-bg: var(--bs-primary);
+    --bs-btn-hover-border-color: var(--bs-primary);
+    --bs-btn-active-color: var(--on-primary);
+    --bs-btn-active-bg: var(--primary-active);
+    --bs-btn-active-border-color: var(--primary-active);
+    --bs-btn-disabled-color: rgba(var(--bs-primary-rgb), .55);
+    --bs-btn-disabled-border-color: rgba(var(--bs-primary-rgb), .3);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--bs-body-color);
+    --bs-btn-border-color: var(--bs-border-color);
+    --bs-btn-hover-color: var(--bs-primary);
+    --bs-btn-hover-bg: var(--surface-2);
+    --bs-btn-hover-border-color: rgba(var(--bs-primary-rgb), .6);
+    --bs-btn-active-color: var(--on-primary);
+    --bs-btn-active-bg: var(--bs-primary);
+    --bs-btn-active-border-color: var(--bs-primary);
+    --bs-btn-disabled-color: var(--bs-secondary-color);
+    --bs-btn-disabled-border-color: var(--bs-border-color);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+}
+
+/* The round icon buttons — the theme switch and "back to top". Bootstrap sizes
+   a button by its padding, which a circle cannot use; set the box instead. */
+.btn.rounded-circle {
+    --bs-btn-padding-x: 0;
+    --bs-btn-padding-y: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+}
+.btn-sm.rounded-circle { width: 2rem; height: 2rem; }
+
+/* ---------------------------------------------------------------------------
+   6. Fields take the same pill shape as the buttons; a textarea is a
+   paragraph box, not a line, so it stays rounded without going fully pill.
+   --------------------------------------------------------------------------- */
+.form-control,
+.form-select {
+    border-radius: 999px;
+    min-width: 0;
+}
+textarea.form-control { border-radius: .7rem; }
+/* A colour swatch is not a line either — a pill would make it an oval. */
+.form-control-color { border-radius: .55rem; }
+
+/* Focus and the last few built-ins that bake their colours at build time. Each
+   is pointed back at a token, so the brand reaches it like everything else. */
+.form-control:focus,
+.form-select:focus {
+    border-color: rgba(var(--bs-primary-rgb), .55);
+    box-shadow: 0 0 0 .25rem var(--bs-focus-ring-color);
+}
+.nav-pills {
+    --bs-nav-pills-link-active-bg: var(--bs-primary);
+    --bs-nav-pills-link-active-color: var(--on-primary);
+}
+.pagination {
+    --bs-pagination-active-bg: var(--bs-primary);
+    --bs-pagination-active-border-color: var(--bs-primary);
+    --bs-pagination-active-color: var(--on-primary);
+    --bs-pagination-focus-box-shadow: 0 0 0 .25rem var(--bs-focus-ring-color);
 }
 
 /* ---------------------------------------------------------------------------
-   4. One more piece Bootstrap has no primitive for: a window for text that can
-   run to thousands of lines — source code, headers, a whois answer. It scrolls
-   instead of stretching the page.
+   7. Cards & tables.
    --------------------------------------------------------------------------- */
-.code-window {
-    max-height: 34rem;
+.card {
+    --bs-card-border-width: 1px;
+    --bs-card-border-color: var(--bs-border-color);
+    --bs-card-bg: var(--surface);
+    --bs-card-cap-bg: transparent;
+    --bs-card-title-color: var(--bs-heading-color);
+    box-shadow: var(--bs-box-shadow-sm);
+    transition: transform var(--snap), box-shadow var(--snap), border-color var(--snap);
+}
+
+/* A card that is itself a link lifts a little when the pointer is over it. */
+@media (hover: hover) {
+    a.card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--bs-box-shadow);
+        border-color: rgba(var(--bs-primary-rgb), .5);
+    }
+}
+
+/* A table lives on a card, so its cells must stay transparent. Bootstrap
+   paints each cell with --bs-table-bg (the page colour), which would lay a
+   square block over the card's rounded corners. */
+.table { --bs-table-bg: transparent; }
+
+/* A meter, borrowed from hika's skill bars, for the progress bars the facts
+   pages show. */
+.progress { --bs-progress-bg: rgba(var(--bs-body-color-rgb), .12); }
+.progress-bar { background-image: linear-gradient(90deg, var(--bs-primary), var(--sky)); }
+
+/* ---------------------------------------------------------------------------
+   8. Masthead. The sticky bar is translucent, so the aurora glow shows through
+   it as the page moves underneath.
+   --------------------------------------------------------------------------- */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: rgba(var(--page-rgb), .82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.site-header .navbar { --bs-navbar-padding-y: .6rem; }
+.site-header .nav-link { font-weight: 500; }
+.site-header .nav-link.active { color: var(--bs-primary) !important; }
+
+.brand-mark {
+    width: 2.6rem;
+    height: 2.6rem;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .85rem;
+    color: var(--on-primary);
+    background-image: linear-gradient(135deg, var(--bs-primary), var(--sky));
+    box-shadow: 0 8px 22px -10px rgba(var(--bs-primary-rgb), .8);
+}
+.brand-name { font-weight: 700; letter-spacing: -.01em; color: var(--bs-heading-color); line-height: 1.05; }
+.brand-tagline { font-family: var(--bs-font-monospace); font-size: .66rem; letter-spacing: .12em; color: var(--bs-secondary-color); }
+.navbar-brand:hover .brand-name { color: var(--bs-primary); }
+
+/* One icon shows at a time; the button says which way it will go. */
+.theme-toggle .fa-sun { display: none; }
+[data-theme="light"] .theme-toggle .fa-sun { display: inline-flex; }
+[data-theme="light"] .theme-toggle .fa-moon { display: none; }
+
+/* ---------------------------------------------------------------------------
+   9. Footer & back-to-top.
+   --------------------------------------------------------------------------- */
+.site-footer { border-top: 1px solid var(--bs-border-color); background: var(--page); }
+#top {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 1040;
+    box-shadow: var(--bs-box-shadow);
+}
+#top[hidden] { display: none; }
+
+/* ---------------------------------------------------------------------------
+   10. Code. Inline snippets take the brand; the window scrolls instead of
+   stretching the page when a tool prints thousands of lines.
+   --------------------------------------------------------------------------- */
+code {
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), .1);
+    padding: .15em .4em;
+    border-radius: var(--bs-border-radius-sm);
+}
+pre {
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--surface-2);
     overflow: auto;
+}
+pre code { background: none; color: var(--bs-body-color); padding: 0; }
+
+.code-window { max-height: 34rem; overflow: auto; }
+
+/* ---------------------------------------------------------------------------
+   11. Motion. Anything marked .reveal rises into place once, when scrolled to.
+   The `js` class is set before the first paint, so with scripting off the
+   content is simply there.
+   --------------------------------------------------------------------------- */
+html.js .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+html.js .reveal.in { opacity: 1; transform: none; }
+
+a:focus-visible, .btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
+    }
+    html.js .reveal { opacity: 1; transform: none; }
 }

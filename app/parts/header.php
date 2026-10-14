@@ -18,7 +18,7 @@ $nav = [
 ];
 ?>
 <!doctype html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-theme="dark" data-bs-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,47 +26,80 @@ $nav = [
 <meta name="description" content="<?= e($description ?? SITE_FULL_NAME . ' — ' . SITE_TAGLINE) ?>">
 <meta name="keywords" content="<?= e($keywords ?? SITE_KEYWORDS) ?>">
 <meta name="author" content="Hiswill Kato">
-<meta name="theme-color" content="#0d6efd">
+<meta name="theme-color" content="#070c11">
 <?php /* The address as typed, without its query, so /tools/hash and
-     /bible/john/3 each name themselves rather than their script. A trailing
-     slash is dropped, because /tools and /tools/ are one page. */ ?>
+      /bible/john/3 each name themselves rather than their script. A trailing
+      slash is dropped, because /tools and /tools/ are one page. */ ?>
 <?php $path = trim((string) strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?'), '/'); ?>
 <link rel="canonical" href="<?= e(url($path)) ?>">
 <link rel="icon" href="<?= asset('images/favicon.svg') ?>" type="image/svg+xml">
+<script>
+/* Settle the theme before the first paint, so the page never flashes the wrong
+   colour. A stored choice wins; otherwise the visitor's system decides. The
+   `js` class lets the stylesheet hide the reveal blocks only when scripting is
+   on to bring them back. */
+(function () {
+    var root = document.documentElement;
+    var theme;
+
+    root.classList.add('js');
+
+    try {
+        theme = localStorage.getItem('hiws-theme');
+    } catch (error) {
+        theme = null;
+    }
+
+    if (theme !== 'dark' && theme !== 'light') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    root.setAttribute('data-theme', theme);
+    root.setAttribute('data-bs-theme', theme);
+})();
+</script>
 <link rel="stylesheet" href="<?= asset('css/bootstrap.min.css') ?>">
 <link rel="stylesheet" href="<?= asset('css/all.min.css') ?>">
 <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>
-<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+<body class="d-flex flex-column min-vh-100">
 
-<a class="visually-hidden-focusable p-3 bg-primary text-white" href="#main">Skip to content</a>
+<a class="visually-hidden-focusable" href="#main">Skip to content</a>
 
-<nav class="navbar navbar-expand-lg bg-body border-bottom sticky-top" aria-label="Main">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="<?= url() ?>">
-            <span class="brand-mark"><?= icon('fa-solid fa-layer-group') ?></span>
-            <span class="d-flex flex-column lh-1">
-                <span><?= e(SITE_NAME) ?></span>
-                <small class="text-body-secondary fw-normal" style="font-size:.7rem"><?= e(SITE_FULL_NAME) ?></small>
-            </span>
-        </a>
+<header class="site-header">
+    <nav class="navbar navbar-expand-lg" aria-label="Main">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="<?= url() ?>">
+                <span class="brand-mark"><?= icon('fa-solid fa-layer-group') ?></span>
+                <span class="d-flex flex-column">
+                    <span class="brand-name"><?= e(SITE_NAME) ?></span>
+                    <span class="brand-tagline d-none d-sm-block"><?= e(SITE_FULL_NAME) ?></span>
+                </span>
+            </a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu"
-                aria-controls="menu" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+            <?= toggle('ms-auto d-lg-none') ?>
 
-        <div class="collapse navbar-collapse" id="menu">
-            <ul class="navbar-nav ms-auto">
-                <?php foreach (array_keys($nav) as $key): ?>
-                <li class="nav-item">
-                    <a class="nav-link<?= here($key) ? ' active' : '' ?>" href="<?= e($nav[$key]['at']) ?>"
-                       <?= here($key) ? 'aria-current="page"' : '' ?>><?= e($nav[$key]['label']) ?></a>
-                </li>
-                <?php endforeach; ?>
-            </ul>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="menu">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1 mt-3 mt-lg-0">
+                    <?php foreach (array_keys($nav) as $key): ?>
+                    <li class="nav-item">
+                        <a class="nav-link<?= here($key) ? ' active' : '' ?>" href="<?= e($nav[$key]['at']) ?>"
+                           <?= here($key) ? 'aria-current="page"' : '' ?>><?= e($nav[$key]['label']) ?></a>
+                    </li>
+                    <?php endforeach; ?>
+
+                    <li class="nav-item d-none d-lg-block ms-lg-2">
+                        <?= toggle('btn-sm') ?>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
+</header>
 
 <main id="main" class="flex-grow-1">

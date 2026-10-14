@@ -9,10 +9,11 @@ require __DIR__ . '/app/parts/header.php';
 ?>
 
 <section class="container py-5">
-    <div class="p-5 mb-5 bg-body rounded-4 border shadow-sm">
+    <div class="p-5 mb-5 bg-body rounded-4 border shadow-sm reveal">
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
-                <h1 class="display-5 fw-semibold mb-3">Welcome to <?= e(SITE_NAME) ?>!</h1>
+                <p class="eyebrow mb-2"><?= e(SITE_TAGLINE) ?></p>
+                <h1 class="display-4 hero-name mb-3">Welcome to <span class="aurora"><?= e(SITE_NAME) ?></span></h1>
                 <p class="lead mb-3">
                     <?= e(SITE_FULL_NAME) ?> crafts web projects that anyone can use, free of charge.
                     They are built for people who are new to the web as much as for developers — the
@@ -43,7 +44,7 @@ require __DIR__ . '/app/parts/header.php';
         <div class="row g-4">
             <?php foreach ($projects as $project): ?>
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm reveal">
                     <div class="card-body d-flex flex-column">
                         <span class="badge bg-primary-subtle text-primary-emphasis rounded-3 p-3 mb-3 align-self-start fs-5">
                             <?= mark($project['icon']) ?>

@@ -55,6 +55,17 @@ function icon(string $name): string
     return '<i class="' . e($name) . '" aria-hidden="true"></i>';
 }
 
+/* The light/dark switch. The choice belongs to the browser, so this only
+   prints the button — theme.js flips what it points at and remembers it. The
+   masthead holds two copies, one for each size of screen. */
+function toggle(string $extra = ''): string
+{
+    $class = trim('btn btn-ghost rounded-circle theme-toggle ' . $extra);
+
+    return '<button type="button" class="' . e($class) . '" aria-label="Switch theme">'
+        . icon('fa-solid fa-moon') . icon('fa-solid fa-sun') . '</button>';
+}
+
 /* A URL-safe version of a title, used for project and tool addresses. */
 function slug(string $text): string
 {
