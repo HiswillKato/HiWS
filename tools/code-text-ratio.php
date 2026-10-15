@@ -53,9 +53,7 @@ require __DIR__ . '/../app/parts/tool.php';
 </form>
 
 <?php if ($error !== ''): ?>
-    <div class="alert alert-warning mt-4 mb-0">
-        <?= icon('fa-solid fa-circle-exclamation me-1') ?><?= e($error) ?>
-    </div>
+    <?= notice($error) ?>
 <?php elseif ($figures !== null): ?>
     <div class="card bg-body rounded-4 border shadow-sm mt-4">
         <div class="card-body">

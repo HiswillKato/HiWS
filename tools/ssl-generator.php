@@ -76,9 +76,7 @@ require __DIR__ . '/../app/parts/tool.php';
 </form>
 
 <?php if ($error !== ''): ?>
-    <div class="alert alert-warning mt-4 mb-0">
-        <?= icon('fa-solid fa-circle-exclamation me-1') ?><?= e($error) ?>
-    </div>
+    <?= notice($error) ?>
 <?php elseif ($made !== []): ?>
     <?php
     $blocks = [
@@ -116,7 +114,5 @@ require __DIR__ . '/../app/parts/tool.php';
         certificate is trusted by you alone.
     </p>
 <?php endif; ?>
-
-<script src="<?= asset('js/copy.js') ?>" defer></script>
 
 <?php require __DIR__ . '/../app/parts/explain.php';

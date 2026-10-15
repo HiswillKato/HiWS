@@ -35,9 +35,7 @@ require __DIR__ . '/../app/parts/tool.php';
 </form>
 
 <?php if ($error !== ''): ?>
-    <div class="alert alert-warning mt-4 mb-0">
-        <?= icon('fa-solid fa-circle-exclamation me-1') ?><?= e($error) ?>
-    </div>
+    <?= notice($error) ?>
 <?php elseif ($image !== null): ?>
     <div class="card bg-body rounded-4 border shadow-sm mt-4 overflow-hidden">
         <img class="img-fluid w-100" src="<?= e($image) ?>" alt="A screenshot of <?= e($address) ?>"

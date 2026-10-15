@@ -134,7 +134,121 @@ function here(string $page): bool
 }
 
 /* -------------------------------------------------------------------------
-   2. Talking to other machines
+   2. Rendering the answer
+
+   Three shapes cover nearly every tool: the amber box that says the input did
+   not make sense, the card of labelled values a lookup answers with, and the
+   card of copyable text a converter answers with. Naming them here keeps the
+   markup in one place, so a tool page reads as its logic and nothing else.
+   ------------------------------------------------------------------------- */
+
+/* The amber warning a tool shows when the input is wrong. $text is escaped,
+   because it usually carries something the visitor typed back to them — an
+   address that would not resolve, a hash that was too short. */
+function notice(string $text): string
+{
+    return '<div class="alert alert-warning mt-4 mb-0" role="alert">'
+        . icon('fa-solid fa-circle-exclamation me-1') . e($text) . '</div>';
+}
+
+/* A copy button. The value rides in a data attribute and copy.js, loaded by
+   the footer, does the rest. $label adds a visible word beside the icon;
+   without one the button is icon-only and carries a hidden label for screen
+   readers. Named clip() rather than copy(), which PHP already has. */
+function clip(string $value, string $label = ''): string
+{
+    $word = $label === ''
+        ? '<span class="visually-hidden">Copy</span>'
+        : '<span>' . e($label) . '</span>';
+
+    return '<button class="btn btn-sm btn-outline-secondary" type="button" data-copy="' . e($value) . '">'
+        . icon('fa-regular fa-copy') . $word . '</button>';
+}
+
+/* A card holding one piece of text — the shape an encode, decode or convert
+   tool answers with. $label names the box; $tall caps its height so a long
+   answer scrolls inside the card instead of stretching the page.
+
+   The visible code keeps its quotes — a minified `class="card"` should read
+   as written, not as `class=&quot;card&quot;` — so only the three characters
+   that could start markup are escaped here. The copy button carries the full
+   escaping, because its value sits inside an HTML attribute. */
+function output(string $text, string $label = '', bool $tall = false): string
+{
+    $head = $label === ''
+        ? ''
+        : '<div class="card-header bg-transparent d-flex align-items-center justify-content-between">'
+            . '<span class="fw-semibold">' . e($label) . '</span>' . clip($text) . '</div>';
+
+    return '<div class="card bg-body rounded-4 border shadow-sm mt-4">' . $head
+        . '<div class="card-body">'
+        . '<pre class="mb-0' . ($tall ? ' code-window' : '') . '"><code>'
+        . htmlspecialchars($text, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8')
+        . '</code></pre>'
+        . '</div></div>';
+}
+
+/* A card holding a table of labelled values — the shape a lookup answers with.
+   Empty values drop out, so a page can hand in everything it found and let the
+   table show only what came back. $caption is developer-written HTML and is
+   trusted; a value that came from the visitor is escaped. */
+function values(array $pairs, string $caption = ''): string
+{
+    $rows = '';
+
+    foreach ($pairs as $label => $value) {
+        if (is_bool($value)) {
+            $value = $value ? 'Yes' : 'No';
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            continue;
+        }
+
+        $rows .= '<tr>'
+            . '<th scope="row" class="text-body-secondary fw-normal w-50">' . e((string) $label) . '</th>'
+            . '<td class="text-break">' . e($value) . '</td>'
+            . '</tr>';
+    }
+
+    if ($rows === '') {
+        return '';
+    }
+
+    return '<div class="card bg-body rounded-4 border shadow-sm mt-4">'
+        . '<div class="table-responsive"><table class="table table-sm align-middle mb-0"><tbody>'
+        . $rows
+        . '</tbody></table></div></div>'
+        . ($caption === '' ? '' : '<p class="text-body-secondary small mt-3 mb-0 text-center">' . $caption . '</p>');
+}
+
+/* A byte count in units a person reads — 2.4 KB rather than 2458. */
+function bytes(int $size): string
+{
+    $units = ['B', 'KB', 'MB', 'GB'];
+    $power = $size > 0 ? min((int) floor(log($size, 1024)), count($units) - 1) : 0;
+
+    return ($power === 0 ? (string) $size : number_format($size / (1024 ** $power), 1)) . ' ' . $units[$power];
+}
+
+/* A number with no trailing zeros — 3 rather than 3.000000, 0.5 not 0.500000.
+   Very large and very small values fall back to scientific notation so they
+   stay readable. */
+function trimmed(float $value): string
+{
+    $abs = abs($value);
+
+    if ($abs !== 0.0 && ($abs >= 1e12 || $abs < 1e-6)) {
+        return rtrim(rtrim(sprintf('%.6e', $value), '0'), '.');
+    }
+
+    return rtrim(rtrim(number_format($value, 6, '.', ''), '0'), '.') ?: '0';
+}
+
+/* -------------------------------------------------------------------------
+   3. Talking to other machines
 
    The tools that reach out — a dictionary, a shortener, a screenshot service,
    a currency feed — and the four that are handed a URL all come through here,
@@ -242,7 +356,7 @@ function translation(): string
 }
 
 /* -------------------------------------------------------------------------
-   3. The contact form
+   4. The contact form
    ------------------------------------------------------------------------- */
 
 /* One hidden field, and the matching check. The token lives in the session,

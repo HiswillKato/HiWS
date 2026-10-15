@@ -66,6 +66,4 @@ require __DIR__ . '/../app/parts/tool.php';
     </div>
 <?php endforeach; ?>
 
-<script src="<?= asset('js/copy.js') ?>" defer></script>
-
 <?php require __DIR__ . '/../app/parts/explain.php';

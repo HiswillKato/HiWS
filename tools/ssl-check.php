@@ -110,9 +110,7 @@ require __DIR__ . '/../app/parts/tool.php';
 </form>
 
 <?php if ($error !== ''): ?>
-    <div class="alert alert-warning mt-4 mb-0">
-        <?= icon('fa-solid fa-circle-exclamation me-1') ?><?= e($error) ?>
-    </div>
+    <?= notice($error) ?>
 <?php elseif ($details !== null): ?>
     <div class="alert alert-<?= e($standing) ?> mt-4 d-flex align-items-center gap-2">
         <?= icon($standing === 'success' ? 'fa-solid fa-lock' : 'fa-solid fa-triangle-exclamation') ?>

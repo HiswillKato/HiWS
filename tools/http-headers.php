@@ -57,9 +57,7 @@ require __DIR__ . '/../app/parts/tool.php';
 </form>
 
 <?php if ($error !== ''): ?>
-    <div class="alert alert-warning mt-4 mb-0">
-        <?= icon('fa-solid fa-circle-exclamation me-1') ?><?= e($error) ?>
-    </div>
+    <?= notice($error) ?>
 <?php elseif ($status !== ''): ?>
     <p class="text-body-secondary mt-4 mb-2">
         <?= e($address) ?> answered <code><?= e($status) ?></code> with
