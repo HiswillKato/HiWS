@@ -1,21 +1,27 @@
 /* ============================================================================
    HiWS — Hiswill Web Stack
-   The "Aurora" look, ported from the sibling site hika and laid on Bootstrap
-   5.3.3 primitives. Dark by default; on a first visit the visitor's system
-   decides, and the switch in the masthead remembers whatever they choose.
+   The "Ember" look: burnt orange warming to gold, a rose third accent in the
+   gradient, a drifting glow, hairline gradients and soft depth. Warm ink for
+   the page instead of the cold navy it started with, so HiWS no longer reads
+   as a twin of its sibling site hika. Laid on Bootstrap 5.3.3
+   primitives. Dark by default; on a first visit the visitor's system decides,
+   and the switch in the masthead remembers whatever they choose.
 
    Nothing here rebuilds a Bootstrap component. Colours, radii and shadows are
    published as --bs-* tokens, so every built-in picks up the brand on its own.
    The bespoke classes are only the pieces Bootstrap has no primitive for:
      · the brand mark and the quiet button (.brand-mark, .btn-ghost)
      · the accents (.eyebrow, .aurora, .hero-name, .mono)
+     · the icon tile the cards and tool headers share (.badge.bg-primary-subtle)
      · the code window the long tool answers scroll inside
      · the reveal-on-scroll motion
+     · the ambient background (a drifting glow and a faint grid)
 
    One token is HiWS's own. `bg-body` reads --bs-body-bg, and the markup puts
    that utility on every card, so here --bs-body-bg is the PANEL surface and
    --page is the shade the <body> itself paints. Rebranding the site is a
-   change to the :root block alone.
+   change to the :root block alone; --brand perhaps most of all, because the
+   buttons, the brand mark and the progress bar all share that one gradient.
    ========================================================================== */
 
 /* ---------------------------------------------------------------------------
@@ -50,156 +56,212 @@
     --bs-body-font-size: 1rem;
     --bs-body-line-height: 1.7;
 
-    /* The page, a shade deeper than every panel that sits on it. */
-    --page: #070c11;
-    --page-rgb: 7, 12, 17;
+    /* The page, a shade deeper than every panel that sits on it — a warm
+       near-black, the ink the ember glows against. */
+    --page: #0b0908;
+    --page-rgb: 11, 9, 8;
 
     /* Surfaces. --bs-body-bg doubles as the panel colour, because the markup
        asks for `bg-body` on its cards. */
-    --bs-body-bg: #0e1820;
-    --bs-body-bg-rgb: 14, 24, 32;
-    --surface: #0e1820;
-    --surface-2: #13212b;
-    --bs-body-color: #cddbe4;
-    --bs-body-color-rgb: 205, 219, 228;
-    --bs-heading-color: #eef7fb;
+    --bs-body-bg: #16110e;
+    --bs-body-bg-rgb: 22, 17, 14;
+    --surface: #16110e;
+    --surface-2: #1e1815;
+    --bs-body-color: #e7dcd3;
+    --bs-body-color-rgb: 231, 220, 211;
+    --bs-heading-color: #fdf6f0;
     /* Pinned, because tables, nav links and list-group hovers all read it and
        a black value would vanish against these surfaces. */
-    --bs-emphasis-color: #eef7fb;
-    --bs-emphasis-color-rgb: 238, 247, 251;
-    --bs-secondary-color: #8399a8;
-    --bs-secondary: #8399a8;
-    --bs-secondary-rgb: 131, 153, 168;
-    --bs-secondary-bg: #0d161d;
-    --bs-tertiary-bg: #121d26;
-    --bs-border-color: rgba(140, 180, 205, .16);
-    --bs-border-color-translucent: rgba(140, 180, 205, .09);
+    --bs-emphasis-color: #fdf6f0;
+    --bs-emphasis-color-rgb: 253, 246, 240;
+    --bs-secondary-color: #a8998e;
+    --bs-secondary: #a8998e;
+    --bs-secondary-rgb: 168, 153, 142;
+    --bs-secondary-bg: #110d0b;
+    --bs-tertiary-bg: #1a1412;
+    --bs-border-color: rgba(236, 176, 124, .15);
+    --bs-border-color-translucent: rgba(236, 176, 124, .08);
 
-    /* Brand — aurora mint */
-    --bs-primary: #2ee6a8;
-    --bs-primary-rgb: 46, 230, 168;
-    --bs-primary-text-emphasis: #74f4cb;
-    --bs-primary-bg-subtle: rgba(46, 230, 168, .12);
-    --bs-primary-border-subtle: rgba(46, 230, 168, .32);
-    --on-primary: #04150e;
-    --primary-hover: #26cf98;
-    --primary-active: #21bd8a;
+    /* Brand — ember: burnt orange warming to gold. */
+    --bs-primary: #ff8f3f;
+    --bs-primary-rgb: 255, 143, 63;
+    --bs-primary-text-emphasis: #ffc291;
+    --bs-primary-bg-subtle: rgba(255, 143, 63, .13);
+    --bs-primary-border-subtle: rgba(255, 143, 63, .33);
+    --on-primary: #1c0c03;
+    --primary-hover: #f78333;
+    --primary-active: #e97527;
 
-    /* The second accent, used only in gradients. */
-    --sky: #4bb8ff;
-    --sky-rgb: 75, 184, 255;
+    /* The two other accents, used in gradients rather than on their own. */
+    --gold: #ffd166;
+    --gold-rgb: 255, 209, 102;
+    --rose: #ff5f8f;
+    --rose-rgb: 255, 95, 143;
 
-    --bs-warning: #f4b860;
-    --bs-warning-rgb: 244, 184, 96;
-    --bs-warning-text-emphasis: #f7cd8f;
-    --bs-warning-bg-subtle: rgba(244, 184, 96, .14);
-    --bs-warning-border-subtle: rgba(244, 184, 96, .32);
+    /* One gradient for every branded surface — buttons, the brand mark, the
+       progress bar. A theme can retune this in a single line. */
+    --brand: linear-gradient(135deg, var(--bs-primary), var(--gold) 78%);
 
-    --bs-danger: #ff6b6b;
-    --bs-danger-rgb: 255, 107, 107;
-    --bs-success: #2ee6a8;
-    --bs-success-rgb: 46, 230, 168;
-    --bs-info: #4bb8ff;
-    --bs-info-rgb: 75, 184, 255;
-    --bs-dark: #05090d;
-    --bs-dark-rgb: 5, 9, 13;
+    --bs-warning: #f6b93b;
+    --bs-warning-rgb: 246, 185, 59;
+    --bs-warning-text-emphasis: #fcd285;
+    --bs-warning-bg-subtle: rgba(246, 185, 59, .14);
+    --bs-warning-border-subtle: rgba(246, 185, 59, .32);
+
+    --bs-danger: #ff5c57;
+    --bs-danger-rgb: 255, 92, 87;
+    --bs-success: #52c46e;
+    --bs-success-rgb: 82, 196, 110;
+    --bs-info: #58a8e6;
+    --bs-info-rgb: 88, 168, 230;
+    --bs-dark: #140d09;
+    --bs-dark-rgb: 20, 13, 9;
 
     --bs-link-color-rgb: var(--bs-primary-rgb);
-    --bs-link-hover-color-rgb: 116, 244, 203;
+    --bs-link-hover-color-rgb: 255, 194, 145;
     --bs-link-decoration: none;
-    --bs-focus-ring-color: rgba(var(--bs-primary-rgb), .28);
+    --bs-focus-ring-color: rgba(var(--bs-primary-rgb), .3);
 
     /* Shape */
-    --bs-border-radius: .75rem;
-    --bs-border-radius-sm: .45rem;
-    --bs-border-radius-lg: 1rem;
-    --bs-border-radius-xl: 1.35rem;
-    --bs-border-radius-xxl: 1.75rem;
+    --bs-border-radius: .8rem;
+    --bs-border-radius-sm: .5rem;
+    --bs-border-radius-lg: 1.05rem;
+    --bs-border-radius-xl: 1.4rem;
+    --bs-border-radius-xxl: 1.8rem;
 
-    /* Depth */
-    --bs-box-shadow-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px -12px rgba(0, 0, 0, .7);
-    --bs-box-shadow: 0 2px 6px rgba(0, 0, 0, .45), 0 20px 45px -20px rgba(0, 0, 0, .8);
-    --bs-box-shadow-lg: 0 6px 14px rgba(0, 0, 0, .5), 0 36px 70px -30px rgba(0, 0, 0, .85);
+    /* Depth — softer and larger than before, so panels feel lifted. */
+    --bs-box-shadow-sm: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 26px -14px rgba(0, 0, 0, .72);
+    --bs-box-shadow: 0 2px 8px rgba(0, 0, 0, .45), 0 24px 52px -22px rgba(0, 0, 0, .82);
+    --bs-box-shadow-lg: 0 8px 18px rgba(0, 0, 0, .5), 0 40px 78px -32px rgba(0, 0, 0, .88);
 
     --ease: cubic-bezier(.4, 0, .2, 1);
-    --snap: .18s var(--ease);
-    --focus: 0 0 0 .22rem rgba(var(--bs-primary-rgb), .28);
+    --snap: .2s var(--ease);
+    --focus: 0 0 0 .22rem rgba(var(--bs-primary-rgb), .3);
 }
 
-/* The switch lifts the whole palette rather than dimming it. */
+/* The switch lifts the whole palette rather than dimming it. The brand
+   gradient stays on the burnt side of the wheel, because the white text that
+   carries a light-theme button would be lost on the dark theme's ink. */
 [data-theme="light"] {
     color-scheme: light;
 
-    --page: #eef3f6;
-    --page-rgb: 238, 243, 246;
+    --page: #fdf3ea;
+    --page-rgb: 253, 243, 234;
 
     --bs-body-bg: #ffffff;
     --bs-body-bg-rgb: 255, 255, 255;
     --surface: #ffffff;
-    --surface-2: #f1f6f8;
-    --bs-body-color: #1b2b34;
-    --bs-body-color-rgb: 27, 43, 52;
-    --bs-heading-color: #0b1a22;
-    --bs-emphasis-color: #000;
-    --bs-emphasis-color-rgb: 0, 0, 0;
-    --bs-secondary-color: #5d7885;
-    --bs-secondary: #5d7885;
-    --bs-secondary-rgb: 93, 120, 133;
-    --bs-secondary-bg: #f1f6f8;
-    --bs-tertiary-bg: #e6eef2;
-    --bs-border-color: rgba(11, 26, 34, .13);
-    --bs-border-color-translucent: rgba(11, 26, 34, .07);
+    --surface-2: #fdf1e6;
+    --bs-body-color: #2a1a10;
+    --bs-body-color-rgb: 42, 26, 16;
+    --bs-heading-color: #1a0e06;
+    --bs-emphasis-color: #160c05;
+    --bs-emphasis-color-rgb: 22, 12, 5;
+    --bs-secondary-color: #8a7466;
+    --bs-secondary: #8a7466;
+    --bs-secondary-rgb: 138, 116, 102;
+    --bs-secondary-bg: #fdf1e6;
+    --bs-tertiary-bg: #f7e7da;
+    --bs-border-color: rgba(38, 20, 10, .13);
+    --bs-border-color-translucent: rgba(38, 20, 10, .07);
 
-    --bs-primary: #0f9e73;
-    --bs-primary-rgb: 15, 158, 115;
-    --bs-primary-text-emphasis: #0b7a58;
-    --bs-primary-bg-subtle: #d8f4ea;
-    --bs-primary-border-subtle: #a4e6d1;
+    --bs-primary: #b85110;
+    --bs-primary-rgb: 184, 81, 16;
+    --bs-primary-text-emphasis: #97400b;
+    --bs-primary-bg-subtle: #ffe7d5;
+    --bs-primary-border-subtle: #f7c9a5;
     --on-primary: #ffffff;
-    --primary-hover: #0c8a64;
-    --primary-active: #0a7554;
+    --primary-hover: #a4470c;
+    --primary-active: #8f3d09;
 
-    --sky: #1586d6;
-    --sky-rgb: 21, 134, 214;
+    --gold: #c07d02;
+    --gold-rgb: 192, 125, 2;
+    --rose: #d43d74;
+    --rose-rgb: 212, 61, 116;
 
-    --bs-warning-text-emphasis: #8a5a12;
-    --bs-warning-bg-subtle: #fdefd5;
-    --bs-warning-border-subtle: #f6d79c;
+    --brand: linear-gradient(135deg, var(--bs-primary), var(--primary-active));
 
-    --bs-link-color-rgb: 15, 158, 115;
-    --bs-link-hover-color-rgb: 11, 122, 88;
+    --bs-warning: #9c600a;
+    --bs-warning-rgb: 156, 96, 10;
+    --bs-warning-text-emphasis: #8a5210;
+    --bs-warning-bg-subtle: #fdefd3;
+    --bs-warning-border-subtle: #f6d596;
 
-    --bs-box-shadow-sm: 0 1px 2px rgba(11, 26, 34, .06), 0 8px 20px -12px rgba(11, 26, 34, .18);
-    --bs-box-shadow: 0 2px 6px rgba(11, 26, 34, .08), 0 20px 42px -22px rgba(11, 26, 34, .28);
-    --bs-box-shadow-lg: 0 6px 14px rgba(11, 26, 34, .1), 0 34px 64px -30px rgba(11, 26, 34, .34);
+    --bs-danger: #d9402f;
+    --bs-danger-rgb: 217, 64, 47;
+    --bs-success: #2a8049;
+    --bs-success-rgb: 42, 128, 73;
+    --bs-info: #1f6fb2;
+    --bs-info-rgb: 31, 111, 178;
 
-    --focus: 0 0 0 .22rem rgba(15, 158, 115, .25);
+    --bs-link-color-rgb: 184, 81, 16;
+    --bs-link-hover-color-rgb: 143, 61, 9;
+
+    --bs-box-shadow-sm: 0 1px 2px rgba(38, 20, 10, .06), 0 10px 24px -14px rgba(38, 20, 10, .2);
+    --bs-box-shadow: 0 2px 6px rgba(38, 20, 10, .08), 0 22px 46px -24px rgba(38, 20, 10, .3);
+    --bs-box-shadow-lg: 0 6px 14px rgba(38, 20, 10, .1), 0 36px 68px -32px rgba(38, 20, 10, .36);
+
+    --focus: 0 0 0 .22rem rgba(184, 81, 16, .26);
 }
 
 /* ---------------------------------------------------------------------------
    3. Base & typography.
    --------------------------------------------------------------------------- */
+html { scroll-behavior: smooth; }
+
 body {
     min-height: 100vh;
     background-color: var(--page);
-    background-image:
-        radial-gradient(1100px 560px at 82% -8%, rgba(var(--bs-primary-rgb), .10), transparent 60%),
-        radial-gradient(900px 520px at 0% -4%, rgba(var(--sky-rgb), .08), transparent 55%);
-    background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    scrollbar-color: rgba(var(--bs-body-color-rgb), .28) transparent;
+}
+
+/* The ambient glow, and the faint grid over it. Both are fixed, so the page
+   slides across them; both sit behind everything, so nothing has to fight them
+   for a click. The glow drifts slowly to keep the page feeling alive. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: -10%;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+        radial-gradient(52rem 38rem at 82% -10%, rgba(var(--bs-primary-rgb), .16), transparent 58%),
+        radial-gradient(48rem 34rem at -8% 2%, rgba(var(--gold-rgb), .14), transparent 56%),
+        radial-gradient(42rem 30rem at 50% 116%, rgba(var(--rose-rgb), .12), transparent 60%);
+    animation: drift 28s ease-in-out infinite alternate;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(var(--bs-body-color-rgb), .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--bs-body-color-rgb), .035) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(circle at 50% 0%, #000, transparent 76%);
+    mask-image: radial-gradient(circle at 50% 0%, #000, transparent 76%);
+}
+
+@keyframes drift {
+    from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+    to   { transform: translate3d(1.5%, 1.5%, 0) scale(1.06); }
 }
 
 h1, h2, h3, h4, h5, h6,
 .display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
     font-weight: 700;
-    letter-spacing: -.02em;
+    letter-spacing: -.025em;
     color: var(--bs-heading-color);
 }
 
 .lead { color: var(--bs-secondary-color); }
 hr { opacity: .12; }
-::selection { background: rgba(var(--bs-primary-rgb), .28); }
+::selection { background: rgba(var(--bs-primary-rgb), .3); }
 .text-body-secondary { color: var(--bs-secondary-color) !important; }
 
 /* The one serif face on the site, kept for the page that introduces the
@@ -207,8 +269,8 @@ hr { opacity: .12; }
 .hero-name {
     font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
     font-weight: 600;
-    letter-spacing: -.025em;
-    line-height: 1.05;
+    letter-spacing: -.028em;
+    line-height: 1.04;
 }
 
 .eyebrow {
@@ -222,11 +284,20 @@ hr { opacity: .12; }
 
 .mono { font-family: var(--bs-font-monospace); }
 
+/* Three accents flowing across the text, sliding gently so the gradient is
+   never quite still. */
 .aurora {
-    background-image: linear-gradient(100deg, var(--bs-primary), var(--sky) 72%);
+    background-image: linear-gradient(100deg, var(--bs-primary), var(--gold) 48%, var(--rose));
+    background-size: 220% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    animation: shimmer 9s ease-in-out infinite alternate;
+}
+
+@keyframes shimmer {
+    from { background-position: 0% 0; }
+    to   { background-position: 100% 0; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -260,22 +331,33 @@ a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link
 .btn:active { transform: translateY(1px); }
 .btn:focus-visible { box-shadow: var(--focus); }
 
+/* The primary button paints the shared brand gradient, so it matches the mark
+   and the progress bar rather than a flat fill. */
 .btn-primary {
     --bs-btn-color: var(--on-primary);
-    --bs-btn-bg: var(--bs-primary);
-    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: transparent;
     --bs-btn-hover-color: var(--on-primary);
-    --bs-btn-hover-bg: var(--primary-hover);
-    --bs-btn-hover-border-color: var(--primary-hover);
+    --bs-btn-hover-bg: transparent;
+    --bs-btn-hover-border-color: transparent;
     --bs-btn-active-color: var(--on-primary);
-    --bs-btn-active-bg: var(--primary-active);
-    --bs-btn-active-border-color: var(--primary-active);
+    --bs-btn-active-bg: transparent;
+    --bs-btn-active-border-color: transparent;
     --bs-btn-disabled-color: var(--on-primary);
-    --bs-btn-disabled-bg: var(--bs-primary);
-    --bs-btn-disabled-border-color: var(--bs-primary);
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: transparent;
     --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
+    background-image: var(--brand);
+    border: 1px solid transparent;
 }
-.btn-primary:hover { box-shadow: 0 12px 30px -12px rgba(var(--bs-primary-rgb), .7); }
+.btn-primary:hover,
+.btn-primary:active,
+.btn-primary:disabled {
+    background-image: var(--brand);
+    filter: brightness(1.06);
+}
+.btn-primary:active { filter: brightness(.95); }
+.btn-primary:hover { box-shadow: 0 14px 32px -14px rgba(var(--bs-primary-rgb), .75); }
 
 /* A quiet button that borrows the page surface rather than a colour. */
 .btn-ghost {
@@ -340,7 +422,7 @@ a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link
     border-radius: 999px;
     min-width: 0;
 }
-textarea.form-control { border-radius: .7rem; }
+textarea.form-control { border-radius: .8rem; }
 /* A colour swatch is not a line either — a pill would make it an oval. */
 .form-control-color { border-radius: .55rem; }
 
@@ -371,15 +453,17 @@ textarea.form-control { border-radius: .7rem; }
     --bs-card-bg: var(--surface);
     --bs-card-cap-bg: transparent;
     --bs-card-title-color: var(--bs-heading-color);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .035), transparent 42%);
     box-shadow: var(--bs-box-shadow-sm);
     transition: transform var(--snap), box-shadow var(--snap), border-color var(--snap);
 }
 
-/* A card that is itself a link lifts a little when the pointer is over it. */
+/* A card that is itself a link lifts a little when the pointer is over it, and
+   takes a brand-tinted ring on the way. */
 @media (hover: hover) {
     a.card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--bs-box-shadow);
+        transform: translateY(-5px);
+        box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), .38), var(--bs-box-shadow);
         border-color: rgba(var(--bs-primary-rgb), .5);
     }
 }
@@ -389,26 +473,66 @@ textarea.form-control { border-radius: .7rem; }
    square block over the card's rounded corners. */
 .table { --bs-table-bg: transparent; }
 
+/* The rounded icon tile the project cards, the tools index and every tool
+   header share. It is the one badge the site dresses up, so it is styled by
+   its variant rather than by a class of its own. */
+.badge.bg-primary-subtle {
+    background-image: linear-gradient(140deg, rgba(var(--bs-primary-rgb), .2), rgba(var(--gold-rgb), .16));
+    border: 1px solid var(--bs-primary-border-subtle);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+    line-height: 1;
+}
+
 /* A meter, borrowed from hika's skill bars, for the progress bars the facts
    pages show. */
 .progress { --bs-progress-bg: rgba(var(--bs-body-color-rgb), .12); }
-.progress-bar { background-image: linear-gradient(90deg, var(--bs-primary), var(--sky)); }
+.progress-bar { background-image: var(--brand); }
 
 /* ---------------------------------------------------------------------------
-   8. Masthead. The sticky bar is translucent, so the aurora glow shows through
-   it as the page moves underneath.
+   8. Masthead. The sticky bar is translucent, so the glow shows through it as
+   the page moves underneath, and a hairline gradient runs along its base.
    --------------------------------------------------------------------------- */
 .site-header {
     position: sticky;
     top: 0;
     z-index: 1030;
-    background: rgba(var(--page-rgb), .82);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: rgba(var(--page-rgb), .78);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
     border-bottom: 1px solid var(--bs-border-color);
 }
+.site-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(var(--bs-primary-rgb), .45), rgba(var(--gold-rgb), .3), transparent);
+    pointer-events: none;
+}
 .site-header .navbar { --bs-navbar-padding-y: .6rem; }
-.site-header .nav-link { font-weight: 500; }
+.site-header .nav-link {
+    font-weight: 500;
+    position: relative;
+}
+/* The active or hovered section grows a short gradient underline from the
+   left, so the current page reads without shouting. */
+.site-header .nav-link::after {
+    content: "";
+    position: absolute;
+    left: .75rem;
+    right: .75rem;
+    bottom: .35rem;
+    height: 2px;
+    border-radius: 2px;
+    background-image: var(--brand);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--snap);
+}
+.site-header .nav-link:hover::after,
+.site-header .nav-link.active::after { transform: scaleX(1); }
 .site-header .nav-link.active { color: var(--bs-primary) !important; }
 
 .brand-mark {
@@ -420,8 +544,13 @@ textarea.form-control { border-radius: .7rem; }
     justify-content: center;
     border-radius: .85rem;
     color: var(--on-primary);
-    background-image: linear-gradient(135deg, var(--bs-primary), var(--sky));
-    box-shadow: 0 8px 22px -10px rgba(var(--bs-primary-rgb), .8);
+    background-image: var(--brand);
+    box-shadow: 0 10px 24px -12px rgba(var(--bs-primary-rgb), .85);
+    transition: transform var(--snap), box-shadow var(--snap);
+}
+.navbar-brand:hover .brand-mark {
+    transform: translateY(-1px) rotate(-3deg);
+    box-shadow: 0 14px 30px -12px rgba(var(--bs-primary-rgb), .95);
 }
 .brand-name { font-weight: 700; letter-spacing: -.01em; color: var(--bs-heading-color); line-height: 1.05; }
 .brand-tagline { font-family: var(--bs-font-monospace); font-size: .66rem; letter-spacing: .12em; color: var(--bs-secondary-color); }
@@ -462,10 +591,11 @@ pre {
     border-radius: var(--bs-border-radius);
     background: var(--surface-2);
     overflow: auto;
+    scrollbar-width: thin;
 }
 pre code { background: none; color: var(--bs-body-color); padding: 0; }
 
-.code-window { max-height: 34rem; overflow: auto; }
+.code-window { max-height: 34rem; overflow: auto; scrollbar-width: thin; }
 
 /* ---------------------------------------------------------------------------
    11. Motion. Anything marked .reveal rises into place once, when scrolled to.
@@ -474,10 +604,11 @@ pre code { background: none; color: var(--bs-body-color); padding: 0; }
    --------------------------------------------------------------------------- */
 html.js .reveal {
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity .6s var(--ease), transform .6s var(--ease);
+    transform: translateY(22px) scale(.995);
+    filter: blur(5px);
+    transition: opacity .7s var(--ease), transform .7s var(--ease), filter .7s var(--ease);
 }
-html.js .reveal.in { opacity: 1; transform: none; }
+html.js .reveal.in { opacity: 1; transform: none; filter: none; }
 
 a:focus-visible, .btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible {
     outline: 2px solid var(--bs-primary);
@@ -491,5 +622,6 @@ a:focus-visible, .btn:focus-visible, .form-control:focus-visible, .form-select:f
         transition-duration: .001ms !important;
         scroll-behavior: auto !important;
     }
-    html.js .reveal { opacity: 1; transform: none; }
+    html.js .reveal { opacity: 1; transform: none; filter: none; }
+    body::before { animation: none; }
 }

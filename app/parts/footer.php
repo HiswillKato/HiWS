@@ -14,7 +14,7 @@ $legal = [
             <div class="col-lg-6">
                 <a class="navbar-brand d-inline-flex align-items-center gap-2 mb-3" href="<?= url() ?>">
                     <span class="brand-mark"><?= icon('fa-solid fa-layer-group') ?></span>
-                    <span class="brand-name"><?= e(SITE_FULL_NAME) ?></span>
+                    <span class="brand-name"><?= e(SITE_NAME) ?></span>
                 </a>
                 <p class="text-body-secondary mb-2" style="max-width: 30rem"><?= e(SITE_TAGLINE) ?></p>
                 <p class="text-body-secondary small mb-0">
@@ -61,5 +61,6 @@ $legal = [
 
 <script src="<?= asset('js/bootstrap.bundle.min.js') ?>" defer></script>
 <script src="<?= asset('js/theme.js') ?>" defer></script>
+<script src="<?= asset('js/copy.js') ?>" defer></script>
 </body>
 </html>

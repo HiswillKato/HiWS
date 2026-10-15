@@ -22,11 +22,12 @@ $nav = [
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e($title) ?> &middot; <?= e(SITE_FULL_NAME) ?></title>
+<title><?= e($title) ?> &middot; <?= e(SITE_NAME) ?></title>
 <meta name="description" content="<?= e($description ?? SITE_FULL_NAME . ' — ' . SITE_TAGLINE) ?>">
 <meta name="keywords" content="<?= e($keywords ?? SITE_KEYWORDS) ?>">
 <meta name="author" content="Hiswill Kato">
-<meta name="theme-color" content="#070c11">
+<meta name="theme-color" content="#0b0908">
+<meta name="theme-color" content="#fdf3ea" media="(prefers-color-scheme: light)">
 <?php /* The address as typed, without its query, so /tools/hash and
       /bible/john/3 each name themselves rather than their script. A trailing
       slash is dropped, because /tools and /tools/ are one page. */ ?>
