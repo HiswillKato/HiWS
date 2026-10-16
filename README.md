@@ -32,7 +32,7 @@ database.sql    schema + seed; DROP TABLE first, so it is also the reset
 
 ## Running it locally
 
-Apache serves the tree directly; there is no dev server.
+nginx serves the tree directly; there is no dev server.
 
 ```bash
 mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS hiws CHARACTER SET utf8mb4"

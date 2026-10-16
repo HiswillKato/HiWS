@@ -7,18 +7,20 @@ carried over verbatim.
 
 Plain procedural PHP 8.3+, MySQLi, Bootstrap 5.3.3 and Font Awesome 6.5.2 (both
 committed under `assets/`), no framework, no Composer, no npm, no build step.
-Apache + php-fpm serves it; data lives in MariaDB.
+nginx + php-fpm serves it; data lives in MariaDB.
 
 ## Where it is served
 
 - **https://hiws/** (alias `http://www.hiws/`, `https://www.hiws/`). Both names are
   in `/etc/hosts` as `127.0.0.1`, and `/etc/wsl.conf` sets `generateHosts = false`
   so WSL does not wipe them on restart.
-- vhost `/etc/apache2/sites-enabled/hiws.conf`, docroot `/var/www/hiws`.
-  **`DocumentRoot` and `AllowOverride All` are both load-bearing:** `.htaccess`
-  holds the router and the `app/` deny-list, so `AllowOverride None` would 404
-  every short address while `/about.php` still worked — which reads as a rewrite
-  bug rather than a config one.
+- vhost `/etc/nginx/conf.d/hiws.conf`, docroot `/var/www/hiws`. **`root` and the
+  included `snippets/php-site.conf` are both load-bearing:** `.htaccess` holds the
+  router and the `app/` deny-list, so dropping the snippet's Lua `.htaccess` layer
+  would 404 every short address while `/about.php` still worked — which reads as a
+  rewrite bug rather than a config one. The same snippet also carries the shared
+  `/pma/` route (phpMyAdmin from `/usr/share/phpmyadmin` via the `/usr/share/pma`
+  symlink, its own FPM pool).
 - TLS certificate `/etc/ssl/hiswill-ca/certs/hiws.crt`, key in `private/`, signed by
   **Hiswill CA** (`/etc/ssl/hiswill-ca/ca.crt`), which the local browsers trust.
   To mint another name, copy the shape of the existing ones: EC P-256, SHA-256,
@@ -54,14 +56,14 @@ because `app/config.php` holds the database account.
 
 ## Run and verify
 
-There is no test suite and no dev-server command; Apache serves the tree directly.
+There is no test suite and no dev-server command; nginx serves the tree directly.
 
 ```bash
 php -l <file>                              # syntax check a file
 for f in $(find . -name '*.php'); do php -l "$f"; done   # all of them
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/app/config.php   # must be 403
-sudo apache2ctl configtest && sudo systemctl reload apache2              # after a vhost change
+sudo nginx -t && sudo systemctl reload nginx                            # after a vhost change
 ```
 
 ## Database
