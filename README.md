@@ -25,6 +25,10 @@ project, including its routing — lives in `/etc/nginx/conf.d/hiws.conf`; the
 project folders carry no `.htaccess`. `PROJECTS` in `app/projects.php` lists the
 names, and `url('tools/bmi')` builds the right host from anywhere on the site.
 
+The site also answers at `hiws.eu.org` and `hiws.us.ci`. Those names and their
+project subdomains redirect to the matching `hiws.dev` address, and one Let's
+Encrypt certificate covers all three domains plus a wildcard for each.
+
 ## Layout
 
 ```

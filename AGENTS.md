@@ -11,9 +11,10 @@ nginx + php-fpm serves it; data lives in MariaDB.
 
 ## Where it is served
 
-- **https://hiws/** (alias `http://www.hiws/`, `https://www.hiws/`). Both names are
-  in `/etc/hosts` as `127.0.0.1`, and `/etc/wsl.conf` sets `generateHosts = false`
-  so WSL does not wipe them on restart.
+- **https://hiws.dev/** is the canonical address. `https://www.hiws.dev/`,
+  **https://hiws.eu.org/** and **https://hiws.us.ci/** are aliases: nginx
+  redirects their apex, www and project subdomains to the matching `hiws.dev`
+  address, so one page never has two spellings.
 - vhost `/etc/nginx/conf.d/hiws.conf`, docroot `/var/www/hiws`. **`root` and the
   included `snippets/php-site.conf` are both load-bearing:** `.htaccess` holds the
   router and the `app/` deny-list, so dropping the snippet's Lua `.htaccess` layer
@@ -29,16 +30,18 @@ nginx + php-fpm serves it; data lives in MariaDB.
   `/etc/nginx/conf.d/hiws.conf`. `app/projects.php` lists the names in `PROJECTS`,
   so `url('tools/bmi')` builds an address on that project's host from anywhere.
   The old `/tools`, `/bible` and `/sifm` addresses 301 to the subdomains. Locally,
-  add `127.0.0.1 tools.hiws.dev bible.hiws.dev sifm.hiws.dev` to `/etc/hosts`
-  to use them.
+  add `127.0.0.1 hiws.dev www.hiws.dev tools.hiws.dev bible.hiws.dev sifm.hiws.dev`
+  to `/etc/hosts` to use them.
 - That vhost — every server block and its routing — is versioned at
   `deploy/nginx/hiws.conf`, which is denied over HTTP. Edit it there, then
   `sudo cp deploy/nginx/hiws.conf /etc/nginx/conf.d/hiws.conf && sudo nginx -t &&
   sudo systemctl reload nginx`.
-- TLS certificate `/etc/ssl/hiswill-ca/certs/hiws.crt`, key in `private/`, signed by
-  **Hiswill CA** (`/etc/ssl/hiswill-ca/ca.crt`), which the local browsers trust.
-  To mint another name, copy the shape of the existing ones: EC P-256, SHA-256,
-  730 days, SAN + `extendedKeyUsage = serverAuth`.
+- TLS is one Let's Encrypt certificate at `/etc/letsencrypt/live/hiws.dev/`,
+  covering `hiws.dev`, `hiws.eu.org`, `hiws.us.ci` and one wildcard for each.
+  Renewal uses DNS-01 through the Cloudflare credentials in
+  `/root/.secrets/cloudflare.ini`; check it with
+  `sudo certbot renew --cert-name hiws.dev --dry-run`. A deploy hook reloads
+  nginx after a successful renewal.
 - Database **`hiws`** on `127.0.0.1`, account `root` / `root` (see `app/config.php`).
 
 ## How a request flows
