@@ -18,7 +18,7 @@ define('SIFM_PASSWORD', '$2y$12$y5AGvg78jvOvZCH7eYU.lu8R8i8vNaiG7ZFAaUb.vu714rcm
 
 ## Scope of every file operation + host used by "open in browser" links
 define('SIFM_HOME', __DIR__ . '/home');
-define('SIFM_HOST', $_SERVER['HTTP_HOST']);
+define('SIFM_HOST', 'sifm.hiws.dev');
 define('SIFM_DATE', 'Y-m-d H:i');
 
 ## Largest file the editor opens in one textarea (bytes)
@@ -26,6 +26,10 @@ define('SIFM_MAX_EDIT', 2097152);
 
 ## Largest file the importer pulls from a URL (bytes)
 define('SIFM_MAX_IMPORT', 26214400);
+
+/* Never allow an uploaded file to become executable if the web-server rules
+ * are changed later. Source files can still be created and edited in place. */
+const SIFM_BLOCKED_UPLOAD_EXTENSIONS = ['cgi', 'fcgi', 'phar', 'phtml'];
 
 /**** Routing table — a query flag (?action&f=path) picks the page.
  **** A new page registers in three places: here, $title in dispatch, and the
@@ -59,6 +63,14 @@ foreach ($actions as $flag) {
     }
 }
 
+/* The manager is an authenticated file-writing application. Keep its
+ * responses and session cookie conservative even when the surrounding vhost
+ * is re-used for a demo or a local preview. */
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://esm.sh https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://esm.sh; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+
 session_cache_limiter('nocache');
 session_name(SIFM_ID);
 session_set_cookie_params([
@@ -66,7 +78,7 @@ session_set_cookie_params([
     'path'     => '/',
     'httponly' => true,
     'samesite' => 'Lax',
-    'secure'   => !empty($_SERVER['HTTPS']),
+    'secure'   => true,
 ]);
 session_start();
 csrf(); // mint the token for this session
@@ -117,14 +129,14 @@ if ($action === 'edit') {
         message('File is not writable — chmod it first, then edit.', 0);
         redirect('file', $file);
     }
-    $size = (int) @filesize(SIFM_HOME . '/' . $file);
+    $size = (int) @filesize($fm->abs($file));
     if ($size > SIFM_MAX_EDIT) {
         message('Too large for the editor (2 MB limit) — use Source or download it.', 2);
         redirect('file', $file);
     }
 }
 if ($action === 'image') {
-    if (!@getimagesize(SIFM_HOME . '/' . $file)) {
+    if (!@getimagesize($fm->abs($file))) {
         message('That file is not an image.', 2);
         redirect('file', $file);
     }
@@ -300,23 +312,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('folder');
         }
         if (post('save') !== '') {
-            $on_disk = (int) (@filemtime(SIFM_HOME . '/' . $file));
+            $on_disk = (int) @filemtime($fm->abs($file));
             $fresh = (int) post('mtime') === $on_disk;
-            $saved = $fresh && file_put_contents(SIFM_HOME . '/' . $file, is_string($_POST['data'] ?? null) ? $_POST['data'] : '') !== false;
+            $saved = $fresh && file_put_contents($fm->abs($file), is_string($_POST['data'] ?? null) ? $_POST['data'] : '', LOCK_EX) !== false;
             $text  = !$fresh
                 ? 'The file changed on disk since you opened it — reload to get the latest version.'
                 : ($saved ? 'Saved successfully!' : 'Save failed!');
-            json_out(['ok' => $saved, 'msg' => $text, 'mtime' => (int) (@filemtime(SIFM_HOME . '/' . $file))]);
+            json_out(['ok' => $saved, 'msg' => $text, 'mtime' => (int) (@filemtime($fm->abs($file)))]);
             message($text, $fresh ? ($saved ? 1 : 0) : 2);
             redirect('edit', $file); // PRG: a refresh never reposts the body
         }
         if (post('replace') !== '') {
-            $on_disk = (int) (@filemtime(SIFM_HOME . '/' . $file));
+            $on_disk = (int) @filemtime($fm->abs($file));
             if ((int) post('mtime') !== $on_disk) {
                 message('The file changed on disk since you opened it — nothing replaced.', 2);
             } else {
                 $new = str_replace(post('from'), post('to'), $fm->source($file));
-                if (file_put_contents(SIFM_HOME . '/' . $file, $new) !== false) {
+                if (file_put_contents($fm->abs($file), $new, LOCK_EX) !== false) {
                     message('Phrase replaced!');
                 } else {
                     message('Failed to replace.', 0);
@@ -1135,7 +1147,7 @@ pre.out { white-space: pre-wrap; overflow-wrap: anywhere; }
        a view runs after the HTML has begun and may not redirect. */
     $content = $fm->source($file);
     $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-    $mtime = (int) (@filemtime(SIFM_HOME . '/' . $file));
+    $mtime = (int) (@filemtime($fm->abs($file)));
     /* ?replace=1 still opens the panel (deep link), but the button toggles it
        in place — the editor never navigates away. */
     $replace = get('replace') === '1';
@@ -1678,7 +1690,7 @@ pre.out { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 <?php case 'image': ?>
 <?php
-    $dim = @getimagesize(SIFM_HOME . '/' . $file);
+    $dim = @getimagesize($fm->abs($file));
     $w = $dim ? (int) $dim[0] : 0;
     $h = $dim ? (int) $dim[1] : 0;
 ?>
@@ -2020,6 +2032,9 @@ document.querySelectorAll('pre.src code').forEach(function (el) {
  *  every echo goes through e(). */
 function path(string $path): string
 {
+    if (str_contains($path, chr(0))) {
+        return '';
+    }
     $parts = [];
     foreach (explode('/', $path) as $seg) {
         if ($seg !== '' && $seg !== '.' && $seg !== '..') {
@@ -2261,7 +2276,37 @@ class fm
      *  absolute path is ever built. */
     public function abs(string $path): string
     {
-        return $this->home . '/' . path($path);
+        $relative = path($path);
+        $absolute = $this->home . '/' . $relative;
+        $resolved = realpath($absolute);
+        if ($resolved !== false) {
+            return $this->inside($resolved) ? $resolved : $this->invalidPath($relative);
+        }
+
+        /* A new file can still escape through a symlinked parent, so resolve
+         * the nearest existing ancestor before allowing any write. */
+        $parent = dirname($absolute);
+        while ($parent !== $this->home && !is_dir($parent)) {
+            $next = dirname($parent);
+            if ($next === $parent) {
+                return $this->invalidPath($relative);
+            }
+            $parent = $next;
+        }
+        $resolvedParent = realpath($parent);
+        return $resolvedParent !== false && $this->inside($resolvedParent)
+            ? $absolute
+            : $this->invalidPath($relative);
+    }
+
+    private function inside(string $candidate): bool
+    {
+        return $candidate === $this->home || str_starts_with($candidate, $this->home . DIRECTORY_SEPARATOR);
+    }
+
+    private function invalidPath(string $relative): string
+    {
+        return $this->home . '/.sifm-invalid-' . hash('sha256', $relative);
     }
 
     public function exists(string $path): bool
@@ -2530,11 +2575,14 @@ class fm
     {
         $dir = path($dir);
         $name = basename((string) ($file['name'] ?? ''));
-        if ($name === '' || !is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
+        $extension = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
+        if ($name === '' || str_contains($name, chr(0))
+            || in_array($extension, SIFM_BLOCKED_UPLOAD_EXTENSIONS, true)
+            || !is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
             return false;
         }
         $target = rel($dir, $name);
-        return move_uploaded_file($file['tmp_name'], $this->abs($target));
+        return $this->isfolder($dir) && move_uploaded_file($file['tmp_name'], $this->abs($target));
     }
 
     /** Stream a file to the browser and stop. */
@@ -2681,18 +2729,45 @@ class fm
 
     /** Fetch an http(s) URL into a home-relative destination. Other schemes
      *  (file://, ftp:// …) are refused — this is not an SSRF Swiss army knife. */
-    /** Stream a URL into $dest — null on success, or the one reason it failed. */
+    /** Refuse loopback, link-local, private and reserved destinations. */
+function public_host(string $host): bool
+{
+    $records = filter_var($host, FILTER_VALIDATE_IP)
+        ? []
+        : (dns_get_record($host, DNS_A | DNS_AAAA) ?: []);
+    $addresses = filter_var($host, FILTER_VALIDATE_IP)
+        ? [$host]
+        : array_values(array_filter(array_merge(
+            array_column($records, 'ip'),
+            array_column($records, 'ipv6')
+        ), 'is_string'));
+    if ($addresses === []) {
+        return false;
+    }
+    foreach ($addresses as $address) {
+        if (!is_string($address) || filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** Stream a URL into $dest — null on success, or the one reason it failed. */
     public function import(string $url, string $dest): ?string
     {
-        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-        if (!in_array($scheme, ['http', 'https'], true)) {
-            return 'Only http(s) URLs can be imported.';
+        $parts = parse_url(trim($url));
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = (string) ($parts['host'] ?? '');
+        if (!in_array($scheme, ['http', 'https'], true) || $host === ''
+            || isset($parts['user'], $parts['pass']) || !public_host($host)) {
+            return 'Only public http(s) URLs can be imported.';
         }
         $ctx = stream_context_create(['http' => [
-            'header'      => "Accept: */*\r\n",
-            'user_agent'  => SIFM_NAME . '/' . SIFM_VERSION,
-            'method'      => 'GET',
-            'timeout'     => 20,
+            'header'          => "Accept: */*\r\n",
+            'user_agent'      => SIFM_NAME . '/' . SIFM_VERSION,
+            'method'          => 'GET',
+            'timeout'         => 20,
+            'follow_location' => 0,
         ]]);
         $in = @fopen($url, 'rb', false, $ctx);
         if ($in === false) {
