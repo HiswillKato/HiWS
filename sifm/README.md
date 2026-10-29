@@ -27,3 +27,5 @@ cp /tmp/sifm.php sifm/sifm.php
 
 The admin account is configured in `sifm.php` (`SIFM_ADMIN`, `SIFM_PASSWORD`,
 a `password_hash()` value). Change the password there, not in the database.
+
+> **Security warning:** The default SiFM login is `sifm` / `sifm`. Change both the username and password in `sifm.php` immediately after installation, especially before exposing the manager to the internet.

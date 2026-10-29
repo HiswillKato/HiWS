@@ -13,8 +13,8 @@ define('SIFM_ID', 'sifm');
 
 ## Admin credentials — regenerate the hash with:
 ## php -r "echo password_hash('yourpass', PASSWORD_DEFAULT), PHP_EOL;"
-define('SIFM_ADMIN', 'Hiswill');
-define('SIFM_PASSWORD', '$2y$10$30j49pwoX4mF9uDFCPz2AOY6M1RIrzmjo2LnvEciNQx0A7jYg7ozu');
+define('SIFM_ADMIN', 'sifm');
+define('SIFM_PASSWORD', '$2y$12$y5AGvg78jvOvZCH7eYU.lu8R8i8vNaiG7ZFAaUb.vu714rcmo56l2');
 
 ## Scope of every file operation + host used by "open in browser" links
 define('SIFM_HOME', __DIR__ . '/home');
