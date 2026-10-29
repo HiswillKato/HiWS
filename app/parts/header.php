@@ -30,9 +30,10 @@ $nav = [
 <meta name="theme-color" content="#fdf3ea" media="(prefers-color-scheme: light)">
 <?php /* The address as typed, without its query, so /tools/hash and
       /bible/john/3 each name themselves rather than their script. A trailing
-      slash is dropped, because /tools and /tools/ are one page. */ ?>
-<?php $path = trim((string) strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?'), '/'); ?>
-<link rel="canonical" href="<?= e(url($path)) ?>">
+      slash is dropped, because /tools and /tools/ are one page. On a project
+      subdomain the same address keeps that host, so the project is canonical
+      where it actually lives. */ ?>
+<link rel="canonical" href="<?= e(current_url()) ?>">
 <link rel="icon" href="<?= asset('images/favicon.svg') ?>" type="image/svg+xml">
 <script>
 /* Settle the theme before the first paint, so the page never flashes the wrong

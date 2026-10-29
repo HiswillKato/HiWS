@@ -17,34 +17,114 @@ function e(mixed $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
-/* An absolute address. With BASE_URL empty the name comes from the request,
-   so the site answers to hiws, www.hiws or the real domain alike — but only
-   for names on HOSTS, so a forged Host header cannot rewrite our links. */
-function url(string $path = ''): string
+/* The bare host the visitor typed: lower case, without the port. */
+function host_name(): string
 {
-    if (BASE_URL !== '') {
-        $base = rtrim(BASE_URL, '/');
-    } else {
-        $name = trim(preg_replace('~:\d{1,5}$~', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
-        $known = HOSTS === [] || in_array($name, HOSTS, true);
+    $name = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
 
-        if ($name === '' || !$known) {
-            $name = 'localhost';
-        }
-
-        $scheme = (($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['SERVER_PORT'] ?? null) === '443')
-            ? 'https'
-            : 'http';
-
-        $base = $scheme . '://' . $name;
-    }
-
-    return $path === '' ? $base : $base . '/' . ltrim($path, '/');
+    return trim((string) preg_replace('~:\d{1,5}$~', '', $name));
 }
 
+/* Whether a name may drive addresses. A "*.example.com" entry allows exactly
+   one extra label, so tools.example.com is known but a.b.example.com is not. */
+function host_known(string $name): bool
+{
+    if (HOSTS === []) {
+        return true;
+    }
+
+    foreach (HOSTS as $allowed) {
+        if ($allowed === $name) {
+            return true;
+        }
+
+        if (str_starts_with($allowed, '*.')) {
+            $suffix = substr($allowed, 1);
+
+            if (str_ends_with($name, $suffix) && substr_count($name, '.') === substr_count($suffix, '.')) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/* The project whose subdomain this request arrived on, if any. */
+function host_project(): ?string
+{
+    $name = host_name();
+
+    foreach (PROJECTS as $project) {
+        if ($name === $project . '.' . SITE_DOMAIN) {
+            return $project;
+        }
+    }
+
+    return null;
+}
+
+/* scheme://host for the address in the bar, falling back to the real domain
+   when the name is missing or is not one this site answers to. */
+function origin(): string
+{
+    $name = host_name();
+
+    if ($name === '' || !host_known($name)) {
+        $name = SITE_DOMAIN;
+    }
+
+    $scheme = (($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['SERVER_PORT'] ?? null) === '443')
+        ? 'https'
+        : 'http';
+
+    return $scheme . '://' . $name;
+}
+
+/* An absolute address. Each project answers on its own subdomain, so a path
+   that starts with a project name — tools/bmi, bible/john/3 — is built
+   against that host from anywhere. Everything else belongs to the main site,
+   which is why a project page still links back to hiws.dev/about correctly.
+   With BASE_URL empty the main name comes from the request, but only for
+   names on HOSTS, so a forged Host header cannot rewrite our links. */
+function url(string $path = ''): string
+{
+    $path = ltrim($path, '/');
+    $first = explode('/', $path, 2)[0];
+
+    if ($first !== '' && in_array($first, PROJECTS, true)) {
+        return 'https://' . $first . '.' . SITE_DOMAIN . substr($path, strlen($first));
+    }
+
+    $base = BASE_URL !== '' ? rtrim(BASE_URL, '/') : origin();
+
+    return $path === '' ? $base : $base . '/' . $path;
+}
+
+/* The page as it should be indexed: the address in the bar without its query,
+   on the project's own host when the request arrived on one. www and the main
+   name collapse to BASE_URL, so one page never has two canonical spellings. */
+function current_url(): string
+{
+    $path = (string) strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?');
+    $path = '/' . trim($path, '/');
+    $project = host_project();
+
+    if ($project !== null) {
+        $base = 'https://' . $project . '.' . SITE_DOMAIN;
+    } else {
+        $base = rtrim(BASE_URL !== '' ? BASE_URL : origin(), '/');
+    }
+
+    return $path === '/' ? $base : $base . $path;
+}
+
+/* The files the browser downloads come from the host being read, so a project
+   page keeps its stylesheets and fonts on its own origin. The subdomain vhost
+   serves /assets/ from the main tree, where the files actually live. */
 function asset(string $path): string
 {
-    return url('assets/' . ltrim($path, '/'));
+    return origin() . '/assets/' . ltrim($path, '/');
 }
 
 /* A Font Awesome icon by its full class name, e.g. icon('fa-solid fa-lock').
@@ -121,9 +201,16 @@ function cut(string $text, int $length = 150): string
 
 /* Mark the current page in the navigation. Compares the path, not the script,
    because a sub-app's scripts are named read.php, index.php and the rest —
-   what the visitor is on is the section, /bible or /tools, not the file. */
+   what the visitor is on is the section, /bible or /tools, not the file. On a
+   project's own subdomain the project is the section, whatever the script. */
 function here(string $page): bool
 {
+    $project = host_project();
+
+    if ($project !== null) {
+        return $page === $project;
+    }
+
     $path = (string) ($_SERVER['SCRIPT_NAME'] ?? '/');
 
     if ($page === 'index') {

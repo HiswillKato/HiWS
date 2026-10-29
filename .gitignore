@@ -5,3 +5,8 @@
 # Runtime noise
 /error_log
 /php_errors.log
+
+# The file manager's working folder: uploaded files belong to the server,
+# not to the repository. The folder itself is kept so a fresh checkout works.
+/sifm/home/*
+!/sifm/home/.gitkeep

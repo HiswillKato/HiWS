@@ -43,7 +43,7 @@ jobs:
       - name: Health check
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
-          DOMAIN: hiws.eu.org
+          DOMAIN: hiws.dev
         run: |
           set -euo pipefail
           for i in $(seq 1 12); do

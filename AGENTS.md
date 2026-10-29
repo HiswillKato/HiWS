@@ -21,6 +21,20 @@ nginx + php-fpm serves it; data lives in MariaDB.
   rewrite bug rather than a config one. The same snippet also carries the shared
   `/pma/` route (phpMyAdmin from `/usr/share/phpmyadmin` via the `/usr/share/pma`
   symlink, its own FPM pool).
+- Each project is its own home on a subdomain: **https://tools.hiws.dev/**,
+  **https://bible.hiws.dev/** and **https://sifm.hiws.dev/**. The vhost has one
+  server block per project, each with its folder as `root`, and it owns that
+  project's routing too — `/bmi` → `bmi.php`, `/john/3` → `read.php`. The project
+  folders carry no `.htaccess`; the whole subdomain layout is in
+  `/etc/nginx/conf.d/hiws.conf`. `app/projects.php` lists the names in `PROJECTS`,
+  so `url('tools/bmi')` builds an address on that project's host from anywhere.
+  The old `/tools`, `/bible` and `/sifm` addresses 301 to the subdomains. Locally,
+  add `127.0.0.1 tools.hiws.dev bible.hiws.dev sifm.hiws.dev` to `/etc/hosts`
+  to use them.
+- That vhost — every server block and its routing — is versioned at
+  `deploy/nginx/hiws.conf`, which is denied over HTTP. Edit it there, then
+  `sudo cp deploy/nginx/hiws.conf /etc/nginx/conf.d/hiws.conf && sudo nginx -t &&
+  sudo systemctl reload nginx`.
 - TLS certificate `/etc/ssl/hiswill-ca/certs/hiws.crt`, key in `private/`, signed by
   **Hiswill CA** (`/etc/ssl/hiswill-ca/ca.crt`), which the local browsers trust.
   To mint another name, copy the shape of the existing ones: EC P-256, SHA-256,
@@ -31,9 +45,15 @@ nginx + php-fpm serves it; data lives in MariaDB.
 
 1. A page at the root (`about.php`, …) is reached by its short address (`/about`),
    which the root `.htaccess` rewrites.
-2. The page's first line is `require __DIR__ . '/app/init.php'`, which loads
-   `config` → `db` → `functions` → `data` and installs the error handler.
-3. The page sets `$title`, requires `app/parts/header.php`, prints its body, then
+2. On a project subdomain the nginx server block sets the project folder as the
+   document root and turns the readable addresses into scripts: `/bmi` is
+   `tools/bmi.php`, `/john/3` is `bible/read.php?book=john&chapter=3`. The old
+   in-tree addresses on `hiws.dev` redirect to the subdomain. Adding a project is
+   a server block here plus its name in `PROJECTS`; its folder needs no router.
+3. The page's first line is `require __DIR__ . '/app/init.php'`, which loads
+   `config` → `projects` → `db` → `functions` → `data` and installs the error
+   handler.
+4. The page sets `$title`, requires `app/parts/header.php`, prints its body, then
    requires `app/parts/footer.php`.
 
 `app/` is refused over HTTP by both the root `.htaccess` and `app/.htaccess`,
@@ -63,6 +83,10 @@ php -l <file>                              # syntax check a file
 for f in $(find . -name '*.php'); do php -l "$f"; done   # all of them
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/app/config.php   # must be 403
+curl -sk -o /dev/null -w '%{http_code}\n' https://tools.hiws.dev/bmi    # project home
+curl -sk -o /dev/null -w '%{http_code}\n' https://bible.hiws.dev/john/3 # 404 while the table is empty
+curl -sk -o /dev/null -w '%{http_code}\n' https://sifm.hiws.dev/        # 302 to ?signin
+curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/tools            # 301 to the subdomain
 sudo nginx -t && sudo systemctl reload nginx                            # after a vhost change
 ```
 
@@ -79,12 +103,16 @@ is no migration runner, so a schema change is applied by hand and then reflected
 `database.sql`. `projects.status = 0` hides a row from the home page without
 deleting it.
 
-## Still to build
+## The projects
 
-The three projects the home page links to are not ported yet. Until they are, those
-cards answer with the 404 page:
+All three cards on the home page are live. A project folder is a document root of
+its own, so it holds only its own pages:
 
-- `/tools` — the online tools (17 rows already sit in the `tools` table, with their
-  explainer text, ready to render).
-- `/bible` — the online Bible reader.
-- `/sifm` — the simple file manager.
+- **tools/** — one file per tool; `/bmi` is `bmi.php`.
+- **bible/** — `read.php`, `search.php`, `facts.php`, `jics.php`; nginx routes the
+  book/chapter addresses.
+- **sifm/** — SiFM, vendored from <https://github.com/HiswillKato/SiFM> (MIT).
+  `sifm.php` is upstream except for `SIFM_HOME`, which points at `sifm/home/`;
+  that folder is git-ignored, so the files it manages survive a deploy. Only
+  `sifm.php` may execute on that host — every other `.php` under it is refused,
+  so an uploaded PHP file can never run.

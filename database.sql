@@ -42,7 +42,7 @@ CREATE TABLE `projects` (
 
 INSERT INTO `projects` VALUES (1,'Web Tools','A drawer of small online utilities for everyday jobs — domains, networking, security, colours, code and more. No sign-up, no cost.','tools','fa-screwdriver-wrench',1);
 INSERT INTO `projects` VALUES (2,'Online Bible','Read the Bible online, anywhere, with nothing to install. Search a passage, open it by book and chapter, and read it on a clean, quiet page.','bible','fa-book-bible',1);
-INSERT INTO `projects` VALUES (3,'Simple File Manager','A small web file manager: browse a folder, then upload, download, rename and delete, all from the browser. Handy when a phone is all you have.','sifm','fa-folder-tree',0);
+INSERT INTO `projects` VALUES (3,'Simple File Manager','A small web file manager: browse a folder, then upload, download, rename and delete, all from the browser. Handy when a phone is all you have.','sifm','fa-folder-tree',1);
 
 -- ----------------------------------------------------------------------------
 -- tools — every tool the tools project offers, with the explainer text that
