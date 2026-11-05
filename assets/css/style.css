@@ -16,6 +16,7 @@
      · the code window the long tool answers scroll inside
      · the reveal-on-scroll motion
      · the ambient background (a drifting glow and a faint grid)
+     · the still homepage that opts out of both (body.home)
 
    One token is HiWS's own. `bg-body` reads --bs-body-bg, and the markup puts
    that utility on every card, so here --bs-body-bg is the PANEL surface and
@@ -601,6 +602,11 @@ pre code { background: none; color: var(--bs-body-color); padding: 0; }
    11. Motion. Anything marked .reveal rises into place once, when scrolled to.
    The `js` class is set before the first paint, so with scripting off the
    content is simply there.
+
+   The homepage opts out of the rest: header.php gives <body> the `home` class
+   for the root of hiws.dev alone, so its glow sits still behind the page and
+   the gradient across the headline stops sliding. Its reveal blocks were
+   dropped from the markup instead, so nothing there is waiting to rise.
    --------------------------------------------------------------------------- */
 html.js .reveal {
     opacity: 0;
@@ -609,6 +615,9 @@ html.js .reveal {
     transition: opacity .7s var(--ease), transform .7s var(--ease), filter .7s var(--ease);
 }
 html.js .reveal.in { opacity: 1; transform: none; filter: none; }
+
+body.home::before { animation: none; }
+body.home .aurora { animation: none; }
 
 a:focus-visible, .btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible {
     outline: 2px solid var(--bs-primary);

@@ -64,7 +64,11 @@ $nav = [
 <link rel="stylesheet" href="<?= asset('css/all.min.css') ?>">
 <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>
-<body class="d-flex flex-column min-vh-100">
+<?php /* The homepage is the one page that holds still: style.css keys off the
+      `home` class to stop the ambient glow drifting and the headline's
+      gradient sliding. here() answers true only for the root of hiws.dev, so
+      a project's own front page keeps its motion. */ ?>
+<body class="d-flex flex-column min-vh-100<?= here('index') ? ' home' : '' ?>">
 
 <a class="visually-hidden-focusable" href="#main">Skip to content</a>
 
