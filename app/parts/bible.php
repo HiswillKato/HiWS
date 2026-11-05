@@ -4,7 +4,9 @@
 
    The switcher is a bare query link, so it keeps the address it is clicked on
    — a reader looking at John 3:16 in one translation changes to the other
-   without losing the passage. translation() does the remembering. */
+   without losing the passage. translation() does the remembering. With one
+   translation in BIBLE_VERSIONS there is nothing to switch between, so the
+   buttons stay out of the way and the label is printed as a word instead. */
 
 $version = translation();
 
@@ -24,6 +26,8 @@ $active = $script === 'read' ? 'index' : $script;
    of a chapter, or a search, changes translation without losing their place.
    REQUEST_URI is the address as typed: its query is the visitor's own, not the
    one a rewrite added. */
+$several = count(BIBLE_VERSIONS) > 1;
+
 [$path, $given] = array_pad(explode('?', (string) ($_SERVER['REQUEST_URI'] ?? '/'), 2), 2, '');
 parse_str($given, $kept);
 unset($kept['v']);
@@ -45,13 +49,19 @@ unset($kept['v']);
                 <?php endforeach; ?>
             </ul>
 
-            <div class="btn-group btn-group-sm" role="group" aria-label="Translation">
-                <?php foreach (BIBLE_VERSIONS as $key => $label): ?>
-                    <a class="btn btn-outline-secondary<?= $key === $version ? ' active' : '' ?>"
-                       href="<?= e($path . '?' . http_build_query($kept + ['v' => $key])) ?>"
-                       title="<?= e($label) ?>"><?= e($key) ?></a>
-                <?php endforeach; ?>
-            </div>
+            <?php if ($several): ?>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Translation">
+                    <?php foreach (BIBLE_VERSIONS as $key => $label): ?>
+                        <a class="btn btn-outline-secondary<?= $key === $version ? ' active' : '' ?>"
+                           href="<?= e($path . '?' . http_build_query($kept + ['v' => $key])) ?>"
+                           title="<?= e($label) ?>"><?= e($key) ?></a>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <?php /* One translation: the name is a fact, not a choice. */ ?>
+                <span class="text-body-secondary small fw-semibold"
+                      title="<?= e(BIBLE_VERSIONS[$version]) ?>"><?= e($version) ?></span>
+            <?php endif; ?>
         </div>
     </div>
 </div>

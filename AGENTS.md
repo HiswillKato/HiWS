@@ -87,7 +87,7 @@ for f in $(find . -name '*.php'); do php -l "$f"; done   # all of them
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/app/config.php   # must be 403
 curl -sk -o /dev/null -w '%{http_code}\n' https://tools.hiws.dev/bmi    # project home
-curl -sk -o /dev/null -w '%{http_code}\n' https://bible.hiws.dev/john/3 # 404 while the table is empty
+curl -sk -o /dev/null -w '%{http_code}\n' https://bible.hiws.dev/john/3 # 404 until the text is loaded
 curl -sk -o /dev/null -w '%{http_code}\n' https://sifm.hiws.dev/        # 302 to ?signin
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/tools            # 301 to the subdomain
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/robots.txt       # text/plain
@@ -101,12 +101,15 @@ sudo nginx -t && sudo systemctl reload nginx                            # after 
 
 ```bash
 mysql -uroot -proot hiws < database.sql
+php database/bible.php     # the KJV text — the bible table is created empty
 ```
 
 **It starts with `DROP TABLE`** — importing it destroys every existing row. There
 is no migration runner, so a schema change is applied by hand and then reflected in
 `database.sql`. `projects.status = 0` hides a row from the home page without
-deleting it.
+deleting it. The site publishes one translation, the King James Version: it is
+public domain, and `BIBLE_VERSIONS` in `app/config.php` is the list a `?v=` may
+name.
 
 ## The projects
 

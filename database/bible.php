@@ -6,18 +6,17 @@ declare(strict_types=1);
 
        php database/bible.php
 
-   The King James Version and the World English Bible are both in the public
-   domain, which is what lets this site publish them. eBible.org is the WEB's
-   publisher and hosts both texts as a "verse per line" archive: every line
-   reads `GEN 1:1 In the beginning...`. The script downloads two small zips
-   (about 9 MB together), reads the text out of each and writes one row per
-   verse — around 62,000 rows in a few seconds.
+   The King James Version is in the public domain, which is what lets this
+   site publish it. eBible.org hosts the text as a "verse per line" archive:
+   every line reads `GEN 1:1 In the beginning...`. The script downloads the
+   zip (about 5 MB), reads the text out of it and writes one row per verse —
+   around 31,000 rows in a few seconds.
 
    Nothing is stored between runs, and the script is safe to run again,
    because a translation is deleted before it is written back.
 
-   It reaches the network for the archives, unless you already have them — put
-   the two .zip files, or the .txt files extracted from them, in one folder
+   It reaches the network for the archive, unless you already have it — put
+   the .zip file, or the .txt file extracted from it, in one folder
    and name that folder:
 
        php database/bible.php /path/to/folder
@@ -59,15 +58,19 @@ const BOOKS = [
     '3JO' => '3 John',         'JUD' => 'Jude',         'REV' => 'Revelation',
 ];
 
-/* Translation key (a key of BIBLE_VERSIONS) => the eBible archive name. */
-const SOURCES = ['KJV' => 'eng-kjv', 'WEB' => 'eng-web'];
+/* Translation key (a key of BIBLE_VERSIONS) => the eBible archive name. One
+   entry per translation the site publishes; the site publishes one. */
+const SOURCES = ['KJV' => 'eng-kjv'];
 
-/* Pull one text out of an eBible archive. */
+/* Pull one text out of an eBible archive. open() answers true on success and
+   an error code otherwise, so it is compared against true — there is no
+   ZipArchive::OK constant to name, which is what this used to test for and
+   why the importer stopped at the first download. */
 function unzip(string $file, string $stem): string
 {
     $zip = new ZipArchive();
 
-    if ($zip->open($file) !== ZipArchive::OK) {
+    if ($zip->open($file) !== true) {
         throw new RuntimeException($file . ' is not a zip archive');
     }
 
@@ -179,7 +182,7 @@ function store(string $version, string $archive): array
    the network can still be given the text. */
 $folder = $argv[1] ?? null;
 
-echo 'Loading ' . count(SOURCES) . ' translations into `bible` …' . PHP_EOL;
+echo 'Loading ' . count(SOURCES) . ' translation' . (count(SOURCES) === 1 ? '' : 's') . " into `bible` …" . PHP_EOL;
 
 try {
     foreach (SOURCES as $version => $stem) {
@@ -199,4 +202,4 @@ try {
     exit(1);
 }
 
-echo 'Done. Both texts are public domain, from eBible.org.' . PHP_EOL;
+echo 'Done. The text is public domain, from eBible.org.' . PHP_EOL;

@@ -13,7 +13,7 @@
 -- 'fa-screwdriver-wrench' renders as <i class="fa-solid fa-screwdriver-wrench">.
 -- A value beginning 'fa-brands' is used as given, for brand marks.
 --
--- The `bible` table is created empty: its 62,000 verses are text, not
+-- The `bible` table is created empty: its 31,000 verses are text, not
 -- schema, and live in database/bible.php. Load both with:
 --     mysql -uroot -proot hiws < database.sql
 --     php database/bible.php
@@ -127,9 +127,9 @@ INSERT INTO `tools` VALUES ('70','Random Number Generator','Draw random numbers 
 
 -- ----------------------------------------------------------------------------
 -- bible -- one row per verse, per translation. `number` is the book's place in
--- the canon (1..66) and is what a passage is looked up by, so both translations
--- line up even where their versification differs. `version` is a key in
--- BIBLE_VERSIONS (app/config.php).
+-- the canon (1..66) and is what a passage is looked up by, so every translation
+-- lines up on the same book numbers. `version` is a key in BIBLE_VERSIONS
+-- (app/config.php) — 'KJV', the one the site publishes.
 --
 -- Left empty on purpose -- see the note at the top of this file.
 -- ----------------------------------------------------------------------------

@@ -79,11 +79,14 @@ define('MAIL_SUBJECT_PREFIX', '[' . SITE_NAME . '] ');
 
    /bible reads the `bible` table, one row per verse per translation. The
    keys here are the values in `bible.version`; the labels are what the
-   switcher shows. Both texts are public domain, which is what lets the site
-   republish them.
+   switcher shows, and the list is what a ?v= may name. The site publishes
+   one translation — the King James Version — because it is in the public
+   domain, which is what lets the text be republished at all. Adding one
+   back means a key here, a row loaded by database/bible.php, and nothing
+   else: every page reads this list.
    ------------------------------------------------------------------------- */
 
-define('BIBLE_VERSIONS', ['KJV' => 'King James Version', 'WEB' => 'World English Bible']);
+define('BIBLE_VERSIONS', ['KJV' => 'King James Version']);
 define('BIBLE_DEFAULT', 'KJV');
 
 /* -------------------------------------------------------------------------

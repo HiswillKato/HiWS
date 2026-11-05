@@ -6,8 +6,8 @@ require __DIR__ . '/../app/init.php';
 $version = translation();
 
 $title = 'Read the Bible';
-$description = 'Read the whole Bible online, free, in the King James Version or the '
-    . 'World English Bible — book by book, chapter by chapter, with search.';
+$description = 'Read the whole Bible online, free, in the King James Version — '
+    . 'book by book, chapter by chapter, with search.';
 
 /* The canon, in reading order, in the translation being read. */
 $books = books($version);

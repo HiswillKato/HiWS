@@ -38,7 +38,7 @@ require __DIR__ . '/../app/parts/bible.php';
         <div class="col-lg-8">
             <?php if ($promise === []): ?>
                 <div class="alert alert-warning mb-0">
-                    The text of Revelation is not in this translation. Try the other one.
+                    The text of Revelation is not loaded for this translation.
                 </div>
             <?php else: ?>
                 <div class="card bg-body rounded-4 border shadow-sm">

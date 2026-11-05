@@ -10,7 +10,7 @@ Services*). It is a fresh, from-scratch rebuild: plain PHP 8.3+, MySQLi, Bootstr
 | --- | --- | --- |
 | Home | `/` | The project cards, read from the database |
 | Tools | https://tools.hiws.dev/ | 50+ free online tools, one page each |
-| Bible | https://bible.hiws.dev/ | Read, search and compare the Bible |
+| Bible | https://bible.hiws.dev/ | Read and search the Bible — the King James Version |
 | File manager | https://sifm.hiws.dev/ | SiFM — browse, upload, edit and download files |
 | About | `/about` | Who HiWS is, and who builds it |
 | Contact | `/contact` | Self-posting form, CSRF-checked, delivered by mail |
@@ -57,6 +57,7 @@ nginx serves the tree directly; there is no dev server.
 ```bash
 mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS hiws CHARACTER SET utf8mb4"
 mysql -uroot -proot hiws < database.sql
+php database/bible.php     # the KJV text: the bible table ships empty
 ```
 
 Then open **https://hiws/** — the certificate is signed by the local Hiswill CA, so
