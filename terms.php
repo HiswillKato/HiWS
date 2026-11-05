@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
-/* The published terms, carried over from the previous HiWS site. The text is
-   the site's own legal copy, so it is reproduced rather than rewritten; only
-   the name, the address and the link targets are read from config. */
+/* The published terms, rewritten for HiWS as it stands: a free site run from
+   Uganda, so the governing law is Uganda's rather than the borrowed wording
+   the old copy carried. What is said about the material on the site is
+   specific to it — the King James text is public domain, SiFM is MIT
+   licensed — and the linking policy is condensed to what is actually used. */
 require __DIR__ . '/app/init.php';
 
 $title = 'Terms & Conditions';
@@ -14,181 +16,139 @@ require __DIR__ . '/app/parts/header.php';
 <section class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-9">
-            <h1 class="mb-4">Terms &amp; Conditions</h1>
+            <h1 class="mb-2">Terms &amp; Conditions</h1>
+            <p class="text-body-secondary small mb-4">Last updated 5 November 2026</p>
 
-            <p>Welcome to <?= e(SITE_NAME) ?>!</p>
+            <p>Welcome to <?= e(SITE_NAME) ?>.</p>
 
             <p>
-                These terms and conditions outline the rules and regulations for the use of
-                <?= e(SITE_NAME) ?>'s website, located at
-                <a href="<?= url() ?>"><?= e(SITE_DOMAIN) ?></a>.
+                These terms govern your use of <a href="<?= url() ?>"><?= e(SITE_DOMAIN) ?></a> and
+                its project subdomains. By using the site you accept them; if you do not, please
+                stop using it. They sit alongside our
+                <a href="<?= url('privacy') ?>">Privacy Policy</a> and our
+                <a href="<?= url('disclaimer') ?>">Disclaimer</a>, which are part of the same
+                agreement.
             </p>
 
             <p>
-                By accessing this website we assume you accept these terms and conditions. Do not
-                continue to use <?= e(SITE_NAME) ?> if you do not agree with all of the terms stated
-                on this page.
+                <?= e(SITE_NAME) ?> is run by Hiswill Kato from Mityana, Uganda. In these terms,
+                “we”, “us” and “our” mean <?= e(SITE_NAME) ?>, and “you” means whoever is using
+                the site.
             </p>
 
+            <h2 class="h4 mt-4">The service</h2>
             <p>
-                The following terminology applies to these Terms and Conditions, the Privacy
-                Statement and Disclaimer Notice and all Agreements: "Client", "You" and "Your" refer
-                to you, the person who logs on this website and complies with the Company's terms and
-                conditions. "The Company", "Ourselves", "We", "Our" and "Us" refer to our Company.
-                "Party", "Parties" or "Us" refer to both the Client and ourselves. All terms refer to
-                the offer, acceptance and consideration of payment necessary to undertake the process
-                of our assistance to the Client in the most appropriate manner, for the express
-                purpose of meeting the Client's needs in respect of the provision of the Company's
-                stated services, in accordance with, and subject to, the prevailing law of the
-                Netherlands. Any use of the above terminology in the singular, plural, capitalisation
-                and/or he, she or they is taken as interchangeable and therefore as referring to the
-                same.
+                <?= e(SITE_NAME) ?> offers free web tools, a Bible reader and a browser file
+                manager, with no account to open and nothing to pay. We may add, change or retire
+                a tool at any time, and we do not promise that any particular one will always be
+                available.
             </p>
 
-            <h2 class="h4 mt-4">Cookies</h2>
-            <p>
-                We use cookies. By accessing <?= e(SITE_NAME) ?>, you agree to the use of cookies in
-                agreement with the <?= e(SITE_NAME) ?> Privacy Policy.
-            </p>
-            <p>
-                Most interactive websites use cookies to let us retrieve the user's details on each
-                visit. Cookies enable the functionality of certain areas of our website, which makes
-                it easier for visitors. Some of our affiliate or advertising partners may also use
-                cookies.
-            </p>
-
-            <h2 class="h4 mt-4">Licence</h2>
-            <p>
-                Unless otherwise stated, <?= e(SITE_NAME) ?> and/or its licensors own the intellectual
-                property rights for all material on <?= e(SITE_NAME) ?>. All intellectual property
-                rights are reserved. You may access this material from <?= e(SITE_NAME) ?> for your own
-                personal use, subject to the restrictions set in these terms and conditions.
-            </p>
-            <p>You must not:</p>
+            <h2 class="h4 mt-4">Acceptable use</h2>
+            <p>You may use the site for personal and ordinary business purposes. You must not:</p>
             <ul>
-                <li>Republish material from <?= e(SITE_NAME) ?></li>
-                <li>Sell, rent or sub-licence material from <?= e(SITE_NAME) ?></li>
-                <li>Reproduce, duplicate or copy material from <?= e(SITE_NAME) ?></li>
-                <li>Redistribute content from <?= e(SITE_NAME) ?></li>
-            </ul>
-            <p>This Agreement begins on the date it is first accepted.</p>
-
-            <h2 class="h4 mt-4">Hyperlinking to our content</h2>
-            <p>The following organisations may link to our website without prior written approval:</p>
-            <ul>
-                <li>Government agencies</li>
-                <li>Search engines</li>
-                <li>News organisations</li>
-                <li>Online directory distributors, in the same manner as they hyperlink to the websites of other listed businesses</li>
-                <li>System-wide accredited businesses, except soliciting non-profit organisations, charity shopping malls and charity fundraising groups, which may not hyperlink to our website</li>
+                <li>use it for anything unlawful, fraudulent or harmful, or to help someone else do so</li>
+                <li>try to break into, overload or disrupt it — including hammering a tool with automated requests</li>
+                <li>attempt unauthorised access to the machine, the database or other visitors' information</li>
+                <li>upload or send malware, or use a tool to hide the origin of harmful material</li>
+                <li>reproduce the site itself as a competing service, or pass our work off as your own</li>
+                <li>use the content in a way that infringes someone else's rights</li>
             </ul>
             <p>
-                These organisations may link to our home page, to publications or to other website
-                information, so long as the link: (a) is not deceptive in any way; (b) does not
-                falsely imply sponsorship, endorsement or approval of the linking party and its
-                products or services; and (c) fits the context of the linking party's site.
+                Unauthorised access to a computer system is an offence under Uganda's
+                Computer Misuse Act, 2011, and we will report it.
             </p>
-            <p>We may consider and approve other link requests from these types of organisations:</p>
+
+            <h2 class="h4 mt-4">What you send us</h2>
+            <p>
+                Anything you write to us — through the contact form or by email — stays yours. You
+                give us the permission needed to read it, answer it and keep a short record of the
+                exchange, which is all we do with it.
+            </p>
+
+            <h2 class="h4 mt-4">Intellectual property</h2>
+            <p>
+                The design, the code and the written explanation of each tool on this site belong
+                to <?= e(SITE_NAME) ?> unless a page says otherwise. You may read, use and link to
+                them freely for your own purposes; you may not republish them as a service, sell
+                them, or redistribute the site's own material as though it were yours.
+            </p>
+            <p>Parts of the site are deliberately free of any such claim:</p>
             <ul>
-                <li>Commonly known consumer and/or business information sources</li>
-                <li>Dot-com community sites</li>
-                <li>Associations or other groups representing charities</li>
-                <li>Online directory distributors</li>
-                <li>Internet portals</li>
-                <li>Accounting, law and consulting firms</li>
-                <li>Educational institutions and trade associations</li>
+                <li>the Bible text is the <strong>King James Version</strong>, which is in the public domain</li>
+                <li><strong>SiFM</strong> is distributed under the MIT licence at <a href="https://github.com/HiswillKato/SiFM" rel="noopener">github.com/HiswillKato/SiFM</a></li>
+                <li>Bootstrap and the Font Awesome icons are used under their own open licences</li>
             </ul>
             <p>
-                We will approve link requests from these organisations if we decide that: (a) the link
-                would not make us look unfavourably to ourselves or to our accredited businesses;
-                (b) the organisation has no negative records with us; (c) the benefit to us from the
-                visibility of the hyperlink compensates the absence of <?= e(SITE_NAME) ?>; and
-                (d) the link is in the context of general resource information.
+                <?= e(SITE_NAME) ?> and its logos are ours; do not use them without written
+                permission.
             </p>
+
+            <h2 class="h4 mt-4">Cookies and advertising</h2>
             <p>
-                These organisations may link to our home page so long as the link: (a) is not
-                deceptive in any way; (b) does not falsely imply sponsorship, endorsement or approval
-                of the linking party and its products or services; and (c) fits the context of the
-                linking party's site.
+                We use only the small cookies described in the
+                <a href="<?= url('privacy') ?>">Privacy Policy</a>. Advertisements, when shown, are
+                served by Google AdSense under Google's own terms, and we do not choose or endorse
+                what they promote. You can opt out of personalised advertising through the links in
+                that policy.
             </p>
+
+            <h2 class="h4 mt-4">External links</h2>
             <p>
-                If you are one of the organisations listed above and want to link to our website,
-                inform us by email. Include your name, your organisation's name, contact information,
-                the URL of your site, a list of the URLs from which you intend to link to our website,
-                and a list of the URLs on our site you would like to link to. Allow two to three weeks
-                for a response.
+                This site links to other websites — registries, documentation, projects we use.
+                We are not responsible for their content, their availability or what they do with
+                your data, and a link is not our endorsement of them.
             </p>
-            <p>Approved organisations may hyperlink to our website:</p>
+
+            <h2 class="h4 mt-4">Linking to us</h2>
+            <p>You may link to our home page provided that you:</p>
             <ul>
-                <li>By use of our corporate name, or</li>
-                <li>By use of the uniform resource locator being linked to, or</li>
-                <li>By use of any other description of our website that makes sense within the context and format of the linking party's site</li>
+                <li>do not present the link in a misleading or deceptive way</li>
+                <li>do not imply that we sponsor, approve or endorse you or your product</li>
+                <li>keep it within the context of a genuine, relevant page of yours</li>
             </ul>
             <p>
-                No use of <?= e(SITE_NAME) ?>'s logo or other artwork is allowed for linking without a
-                trademark licence agreement.
+                Framing our pages inside yours, or using our name and logos as a link, needs our
+                written permission first. Anything else, ask us — we usually say yes to good
+                projects.
             </p>
 
-            <h2 class="h4 mt-4">iFrames</h2>
+            <h2 class="h4 mt-4">Disclaimers and liability</h2>
             <p>
-                Without prior approval and written permission, you may not create frames around our
-                webpages that alter the visual presentation or appearance of our website in any way.
+                The site is provided as it is, free of charge and without warranties of any kind.
+                We do not promise that it will be uninterrupted, error-free or suitable for a
+                particular purpose, and we are not responsible for decisions you make on the
+                strength of what you read here — see the
+                <a href="<?= url('disclaimer') ?>">Disclaimer</a>.
+            </p>
+            <p>
+                To the maximum extent the laws of Uganda allow, we are not liable for loss or
+                damage arising from your use of the site. Nothing in these terms limits or
+                excludes liability that the law does not permit us to limit — for death or personal
+                injury caused by negligence, for fraud, or for anything else that may not lawfully
+                be excluded.
             </p>
 
-            <h2 class="h4 mt-4">Content liability</h2>
+            <h2 class="h4 mt-4">Governing law</h2>
             <p>
-                We are not responsible for any content that appears on your website. You agree to
-                protect and defend us against all claims arising from your website. No link should
-                appear on any website that may be interpreted as libellous, obscene or criminal, or
-                which infringes, otherwise violates, or advocates the infringement or other violation
-                of, any third-party rights.
+                These terms are governed by the laws of <strong>Uganda</strong>, and the courts of
+                Uganda have jurisdiction over any dispute arising from them or from your use of the
+                site. If you live elsewhere, the protections of your own country's consumer and
+                data-protection law still apply to you as a matter of that law.
             </p>
 
-            <h2 class="h4 mt-4">Your privacy</h2>
-            <p>Please read our <a href="<?= url('privacy') ?>">Privacy Policy</a>.</p>
-
-            <h2 class="h4 mt-4">Reservation of rights</h2>
+            <h2 class="h4 mt-4">Changes to these terms</h2>
             <p>
-                We reserve the right to request that you remove all links, or any particular link, to
-                our website. You agree to remove all links to our website immediately on request. We
-                also reserve the right to amend these terms and conditions and this linking policy at
-                any time. By continuing to link to our website, you agree to be bound by, and to
-                follow, these linking terms and conditions.
+                We may update these terms as the site changes; the date at the top moves when we
+                do. Using the site after an update means you accept the terms as they then stand.
             </p>
 
-            <h2 class="h4 mt-4">Removal of links from our website</h2>
+            <h2 class="h4 mt-4">Contact</h2>
             <p>
-                If you find any link on our website that is offensive for any reason, you are free to
-                contact us at any time. We will consider requests to remove links, but we are not
-                obliged to do so, or to respond to you directly.
-            </p>
-            <p>
-                We do not ensure that the information on this website is correct, we do not warrant
-                its completeness or accuracy, and we do not promise that the website remains available
-                or that the material on it is kept up to date.
-            </p>
-
-            <h2 class="h4 mt-4">Disclaimer</h2>
-            <p>
-                To the maximum extent permitted by applicable law, we exclude all representations,
-                warranties and conditions relating to our website and its use. Nothing in this
-                disclaimer will:
-            </p>
-            <ul>
-                <li>Limit or exclude our or your liability for death or personal injury</li>
-                <li>Limit or exclude our or your liability for fraud or fraudulent misrepresentation</li>
-                <li>Limit any of our or your liabilities in any way that is not permitted under applicable law</li>
-                <li>Exclude any of our or your liabilities that may not be excluded under applicable law</li>
-            </ul>
-            <p>
-                The limitations and prohibitions of liability set in this section and elsewhere in
-                this disclaimer are subject to the preceding paragraph, and govern all liabilities
-                arising under the disclaimer, including liabilities arising in contract, in tort and
-                for breach of statutory duty.
-            </p>
-            <p>
-                As long as the website and the information and services on it are provided free of
-                charge, we will not be liable for any loss or damage of any nature.
+                Questions about these terms go to
+                <a href="mailto:<?= e(SITE_EMAIL) ?>"><?= e(SITE_EMAIL) ?></a>, to
+                <a href="tel:<?= e(SITE_PHONE) ?>"><?= e(SITE_PHONE) ?></a>, or through the
+                <a href="<?= url('contact') ?>">contact page</a>.
             </p>
         </div>
     </div>
