@@ -3,9 +3,10 @@
    tool.php left open and the footer.
 
    The explainer is markdown and the rows are written so its first line is a
-   heading — that line becomes the summary a visitor clicks, and the rest
-   stays folded away until they ask for it. Keeping it in the page rather than
-   behind a fetch means search engines read it without running anything.
+   heading — that line becomes the summary a visitor clicks to fold the rest
+   away or bring it back; the panel is open by default, so the writing is
+   there to read on arrival. Keeping it in the page rather than behind a
+   fetch means search engines read it without running anything.
    Parsedown comes from the autoloader init.php pulls in. */
 
 if (trim((string) $tool['info']) !== '') {
@@ -13,7 +14,7 @@ if (trim((string) $tool['info']) !== '') {
     $summary = trim(ltrim($lines[0], "# \t"));
     $body = isset($lines[1]) ? (new Parsedown())->text($lines[1]) : '';
     ?>
-    <details class="mt-5 bg-body border rounded-4 p-4">
+    <details class="mt-5 bg-body border rounded-4 p-4" open>
         <summary class="fw-semibold text-primary">
             <?= icon('fa-solid fa-circle-info me-1') ?> <?= e($summary) ?>
         </summary>
