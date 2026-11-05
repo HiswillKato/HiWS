@@ -1,0 +1,17 @@
+# ==========================================================================
+# HiWS — robots.txt
+#
+# Nothing is kept out of the way here: every page on this site is meant to be
+# read. The one job of this file is to name the sitemap, which is the list of
+# those pages — /sitemap.xml, built from the site's own tools and books by
+# sitemap.php each time a crawler asks for it.
+#
+# This file is read on hiws.dev only. The project subdomains (tools., bible.,
+# sifm.) carry no robots.txt of their own, and a host without one allows
+# everything — they are reached from the home page and listed in the sitemap.
+# ==========================================================================
+
+User-agent: *
+Allow: /
+
+Sitemap: https://hiws.dev/sitemap.xml

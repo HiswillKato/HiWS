@@ -45,6 +45,8 @@ tools/          tools.hiws.dev — one PHP file per tool
 bible/          bible.hiws.dev — read, search, facts
 sifm/           sifm.hiws.dev — SiFM from HiswillKato/SiFM; home/ is its files
 deploy/nginx/   the vhost: one server block per subdomain, routing included
+robots.txt      crawler policy — it names the sitemap
+sitemap.php     builds /sitemap.xml from the tools and the books of the Bible
 database.sql    schema + seed; DROP TABLE first, so it is also the reset
 ```
 

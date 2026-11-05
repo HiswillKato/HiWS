@@ -90,6 +90,8 @@ curl -sk -o /dev/null -w '%{http_code}\n' https://tools.hiws.dev/bmi    # projec
 curl -sk -o /dev/null -w '%{http_code}\n' https://bible.hiws.dev/john/3 # 404 while the table is empty
 curl -sk -o /dev/null -w '%{http_code}\n' https://sifm.hiws.dev/        # 302 to ?signin
 curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/tools            # 301 to the subdomain
+curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/robots.txt       # text/plain
+curl -sk -o /dev/null -w '%{http_code}\n' https://hiws/sitemap.xml      # application/xml, built by sitemap.php
 sudo nginx -t && sudo systemctl reload nginx                            # after a vhost change
 ```
 

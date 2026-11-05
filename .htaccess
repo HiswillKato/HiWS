@@ -48,6 +48,12 @@ RewriteRule ^\.(?!well-known) - [F,L]
 # --------------------------------------------------------------------------
 # 2. SHORT ADDRESSES FOR THE FLAT PAGES
 # --------------------------------------------------------------------------
+# One address in this section is not a file at all: /sitemap.xml is built by
+# sitemap.php from the tools table and the books of the Bible, so it is
+# rewritten here instead of sitting on disk. robots.txt, the file that names
+# it, is a real file and is served as it is.
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
 # /about -> about.php, but only when nothing real lives at that name, so
 # assets/css/style.css and the folders beneath it are left alone. The target
 # is tested rather than REQUEST_FILENAME so a trailing slash (/about/) still
