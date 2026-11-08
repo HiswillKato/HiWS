@@ -24,6 +24,9 @@ SiFM is a separate project, not hand-written here:
    cannot escape the scope; `import()` only fetches credential-free public
    http(s) URLs and follows no redirects; `SIFM_BLOCKED_UPLOAD_EXTENSIONS`
    keeps an upload from ever becoming executable; writes take `LOCK_EX`.
+8. `file_url()` builds the preview and "open in browser" addresses from where
+   `SIFM_HOME` actually sits, so a scope narrower than the document root still
+   resolves instead of asking for the file one level too high.
 
 The scope is the document root, which is what upstream does too — `SIFM_HOME`
 falls back to `$_SERVER['DOCUMENT_ROOT']`, then to the folder `sifm.php` sits
@@ -60,22 +63,32 @@ governs requests, not includes.
 ```php
 define('SIFM_READONLY', true);
 define('SIFM_CREDENTIAL_WARNING', false);
+define('SIFM_HOME', __DIR__);
 
 require dirname(__DIR__) . '/sifm.php';
 ```
 
-It sets the two switches and then loads the manager, so the vendored file
-stays exactly as upstream has it and deleting the folder puts everything back
-to normal. The demo browses, searches and downloads, refuses every change
-with *"Read-only mode — this file manager does not accept changes."*, and
-shows no reminder about the default sign-in details.
+It sets three switches and then loads the manager, so the vendored file stays
+exactly as upstream has it and deleting the folder puts everything back to
+normal:
+
+- **`SIFM_READONLY`** — the demo browses, searches and downloads, and refuses
+  every change with *"SiFM is currently in read-only mode. You cannot make
+  changes."*
+- **`SIFM_CREDENTIAL_WARNING`** — no reminder about the default sign-in
+  details.
+- **`SIFM_HOME`** — the scope is the demo folder itself, so the file list
+  shows only what sits in there: the wrapper, a `notes/` folder, a markdown
+  file, a chart, a PDF and a ZIP. It can never see `sifm.php` or anything
+  else beside it.
 
 Because `.htaccess` refuses `/sifm.php`, this wrapper is the only way in:
 nobody can reach the unrestricted copy by asking for it directly.
 
 The folder is not in git — `.gitignore` has `/sifm/demo/` — so a deploy does
-not carry it. It belongs to this server; the snippet above is all it takes to
-recreate it anywhere else.
+not carry it. It belongs to this server: the snippet above is all it takes to
+recreate the wrapper, and the sample files are ordinary files dropped in
+beside it.
 
 ## Change the default sign-in details
 
@@ -137,7 +150,8 @@ curl -fsSL https://raw.githubusercontent.com/HiswillKato/SiFM/main/sifm.php -o /
 # re-apply, in this order: the vendored note; wrap every define in
 # if (!defined(...)); the sifm/sifm pair, the reminder and
 # SIFM_CREDENTIAL_WARNING; SIFM_HOST pinned to sifm.hiws.dev;
-# SIFM_READONLY and the dispatch block; the login throttle; then the
-# hardening in abs(), import() and SIFM_BLOCKED_UPLOAD_EXTENSIONS, then:
+# SIFM_READONLY, its refusal message and the dispatch block; the login
+# throttle; file_url(); then the hardening in abs(), import() and
+# SIFM_BLOCKED_UPLOAD_EXTENSIONS, then:
 cp /tmp/sifm.php sifm/sifm.php
 ```

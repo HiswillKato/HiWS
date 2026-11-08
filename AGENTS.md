@@ -126,8 +126,8 @@ its own, so it holds only its own pages:
   hide, and there is a read-only mode and a sign-in throttle. `SIFM_HOME` is
   the document root, so the manager lists its own files as well as anything
   uploaded. The manager is reached through `sifm/demo/index.php`, a wrapper
-  that defines `SIFM_READONLY` and `SIFM_CREDENTIAL_WARNING` before it loads
-  `sifm.php`, and `.htaccess` refuses `/sifm.php` over HTTP so the wrapper
-  cannot be bypassed. Only `index.php`, `demo/index.php` and `sifm.php` may
-  execute — every other `.php` under the folder is refused, so an uploaded
-  PHP file can never run.
+  that defines `SIFM_READONLY`, `SIFM_CREDENTIAL_WARNING` and `SIFM_HOME` —
+  scoped to the demo folder — before it loads `sifm.php`, and `.htaccess`
+  refuses `/sifm.php` over HTTP so the wrapper cannot be bypassed. Only
+  `index.php`, `demo/index.php` and `sifm.php` may execute — every other
+  `.php` under the folder is refused, so an uploaded PHP file can never run.

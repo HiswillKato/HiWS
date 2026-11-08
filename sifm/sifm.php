@@ -138,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_ok()) {
  * alone; everything else (create, upload, edit, move, delete, chmod, paste,
  * the sort bar, …) is turned off. */
 if (SIFM_READONLY && $_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, ['signin', 'search'], true)) {
-    $why = 'Read-only mode — this file manager does not accept changes.';
+    $why = SIFM_NAME . ' is currently in read-only mode. You cannot make changes.';
     json_out(['ok' => false, 'msg' => $why]); // fetch() gets JSON and stops here
     message($why, 2);
     redirect($action === 'multi' ? 'folder' : $action, $f);
@@ -1142,8 +1142,9 @@ pre.out { white-space: pre-wrap; overflow-wrap: anywhere; }
     $info = (object) $fm->info($file);
     $ext = strtolower((string) ($info->extension ?? ''));
     $editable = in_array($ext, fm::edit, true);
-    /* What the browser can show on its own. The file lives inside the
-       document root, so its plain URL is all the preview needs. */
+    /* What the browser can show on its own. The file lives inside SIFM_HOME,
+       which is not always the document root, so file_url() works out the
+       address the file can actually be fetched at. */
     $preview = match ($ext) {
         'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'svg' => 'image',
         'pdf' => 'pdf',
@@ -1152,7 +1153,7 @@ pre.out { white-space: pre-wrap; overflow-wrap: anywhere; }
         'md' => 'markdown',
         default => '',
     };
-    $src = '//' . SIFM_HOST . '/' . implode('/', array_map('rawurlencode', explode('/', $file)));
+    $src = '//' . SIFM_HOST . file_url($file);
 ?>
 <div class="panel-head">
   <h1 class="h5 mb-0">File details</h1>
@@ -2178,6 +2179,21 @@ function redirect(string $action, ?string $item = ''): void
 {
     header('Location: ' . url($action, $item), true, 302);
     exit;
+}
+
+/** The URL path of a file inside SIFM_HOME. The scope is not always the
+ *  document root — a demo or a local preview may point it at a subfolder —
+ *  so the folder it sits in has to be part of the address, or the browser
+ *  asks for the file one level too high and gets a 404. */
+function file_url(string $file): string
+{
+    $home = rtrim(str_replace('\\', '/', SIFM_HOME), '/');
+    $root = rtrim(str_replace('\\', '/', (string) ($_SERVER['DOCUMENT_ROOT'] ?? '')), '/');
+    $prefix = '';
+    if ($root !== '' && $home !== $root && str_starts_with($home, $root . '/')) {
+        $prefix = substr($home, strlen($root) + 1) . '/';
+    }
+    return '/' . $prefix . implode('/', array_map('rawurlencode', explode('/', path($file))));
 }
 
 /** FA6 icon. The name may be bare ("folder-open" → "fas fa-folder-open") or
