@@ -17,3 +17,9 @@
 
 # Local/site-specific (not for GitHub)
 ads.txt
+
+# Composer packages (installed locally; not committed)
+vendor/bacon/
+vendor/dasprid/
+vendor/endroid/
+
