@@ -120,7 +120,14 @@ its own, so it holds only its own pages:
 - **bible/** — `read.php`, `search.php`, `facts.php`, `jics.php`; nginx routes the
   book/chapter addresses.
 - **sifm/** — SiFM, vendored from <https://github.com/HiswillKato/SiFM> (MIT).
-  `sifm.php` is upstream except for `SIFM_HOME`, which points at `sifm/home/`;
-  that folder is git-ignored, so the files it manages survive a deploy. Only
-  `sifm.php` may execute on that host — every other `.php` under it is refused,
-  so an uploaded PHP file can never run.
+  `sifm.php` is upstream plus the local differences `sifm/README.md` lists:
+  every `SIFM_*` define is guarded so a value set beforehand wins, the shipped
+  pair is `sifm`/`sifm` with a reminder that `SIFM_CREDENTIAL_WARNING` can
+  hide, and there is a read-only mode and a sign-in throttle. `SIFM_HOME` is
+  the document root, so the manager lists its own files as well as anything
+  uploaded. The manager is reached through `sifm/demo/index.php`, a wrapper
+  that defines `SIFM_READONLY` and `SIFM_CREDENTIAL_WARNING` before it loads
+  `sifm.php`, and `.htaccess` refuses `/sifm.php` over HTTP so the wrapper
+  cannot be bypassed. Only `index.php`, `demo/index.php` and `sifm.php` may
+  execute — every other `.php` under the folder is refused, so an uploaded
+  PHP file can never run.

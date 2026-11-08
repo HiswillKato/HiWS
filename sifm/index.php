@@ -10,8 +10,10 @@ $keywords = 'sifm, simple file manager, php file manager, web file manager, open
 
 /* The manager itself and the project it comes from. The app lives beside this
    page rather than behind it: the root of the host is the project's home, and
-   /sifm.php is the tool. */
-$app = url('sifm/sifm.php');
+   the manager runs from demo/index.php — a read-only wrapper that loads
+   sifm.php with the settings a demo wants, while .htaccess refuses to serve
+   sifm.php itself. */
+$app = url('sifm/demo/index.php');
 $source = 'https://github.com/HiswillKato/SiFM';
 
 /* The feature list is the README's, kept in its two groups. Each row is an
@@ -40,7 +42,7 @@ $groups = [
 $steps = [
     ['Download the script', 'Get sifm.php from the project on GitHub.'],
     ['Put it on a server', 'Place it in the document root of a PHP-capable web server, or in any folder a browser can reach.'],
-    ['Edit the settings', 'Open the file and adjust the constants near the top: name, version, administrator credentials and the size limits.'],
+    ['Edit the settings', 'Open the file and adjust the constants near the top: name, version and the size limits. The sign-in details ship as sifm / sifm — change both before the manager is reachable from the internet.'],
     ['Open it in a browser', 'Visit sifm.php on that server and sign in.'],
 ];
 
@@ -67,7 +69,11 @@ require __DIR__ . '/../app/parts/header.php';
                         <?= icon('fa-brands fa-github me-1') ?> View on GitHub
                     </a>
                 </div>
-                <p class="text-body-secondary small mt-3 mb-0">
+                <p class="small text-body-secondary mt-3 mb-1">
+                    The copy on this server runs read-only: browse, search and download
+                    as much as you like, but nothing on it can be changed.
+                </p>
+                <p class="text-body-secondary small mt-0 mb-0">
                     One PHP file &middot; no database &middot; free under the MIT licence
                 </p>
             </div>

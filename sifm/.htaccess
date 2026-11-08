@@ -1,0 +1,8 @@
+# The manager is reached through demo/index.php, which switches on read-only
+# mode and hides the default-credentials reminder before it loads sifm.php.
+# Hitting /sifm.php directly would skip both, so the file itself is refused
+# over HTTP. This governs requests only: the wrapper still loads the script
+# with require(), which never goes through the web server.
+<Files "sifm.php">
+    Require all denied
+</Files>

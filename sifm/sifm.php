@@ -3,33 +3,70 @@
 /**** SiFM — Simple File Manager  Configuration. ****/
 
 ## Vendored from https://github.com/HiswillKato/SiFM (MIT, see LICENSE).
-## Only the home below differs from upstream: the manager works in home/,
-## so the application file itself is never listed, edited or deleted.
+## Local differences from upstream are listed in README.md. In short: every
+## setting below is declared only when it is not already defined, so a value
+## set before this file is loaded always wins, and the scope, the credential
+## reminder, the read-only mode and the sign-in throttle are switches.
+
+## Every constant is wrapped in if (!defined(...)), so a value that already
+## exists always wins and nothing is ever defined twice: edit the defaults
+## here, or set SIFM_* before this file is loaded.
 
 ## Display name / version / session-cookie id
-define('SIFM_NAME', 'SiFM');
-define('SIFM_VERSION', '2.0');
-define('SIFM_ID', 'sifm');
+if (!defined('SIFM_NAME')) define('SIFM_NAME', 'SiFM');
+if (!defined('SIFM_VERSION')) define('SIFM_VERSION', '2.0');
+if (!defined('SIFM_ID')) define('SIFM_ID', 'sifm');
 
-## Admin credentials — regenerate the hash with:
+## Admin credentials — the shipped pair is sifm / sifm.
+## CHANGE BOTH BEFORE THIS IS REACHABLE FROM THE INTERNET: while the password
+## is still the shipped one, every signed-in page repeats the reminder below.
+## Regenerate the hash with:
 ## php -r "echo password_hash('yourpass', PASSWORD_DEFAULT), PHP_EOL;"
-define('SIFM_ADMIN', 'sifm');
-define('SIFM_PASSWORD', '$2y$12$y5AGvg78jvOvZCH7eYU.lu8R8i8vNaiG7ZFAaUb.vu714rcmo56l2');
+if (!defined('SIFM_ADMIN')) define('SIFM_ADMIN', 'sifm');
+if (!defined('SIFM_PASSWORD')) define('SIFM_PASSWORD', '$2y$12$y5AGvg78jvOvZCH7eYU.lu8R8i8vNaiG7ZFAaUb.vu714rcmo56l2');
 
-## Scope of every file operation + host used by "open in browser" links
-define('SIFM_HOME', __DIR__ . '/home');
-define('SIFM_HOST', 'sifm.hiws.dev');
-define('SIFM_DATE', 'Y-m-d H:i');
+## The reminder itself: true repeats it on every signed-in page for as long as
+## the password is still the shipped one, false hides it everywhere. Hiding
+## the nag does not change the password, so switch it off only once the pair
+## above has actually been replaced.
+if (!defined('SIFM_CREDENTIAL_WARNING')) define('SIFM_CREDENTIAL_WARNING', true);
+
+## Sign-in throttle — how many failed attempts one client address gets, and
+## how many seconds it is then refused for. The tally lives in a file under
+## the system temp folder, so a new session or a cleared cookie does not reset
+## it, and a successful sign-in clears it. Set the attempts to 0 to switch the
+## throttle off entirely.
+if (!defined('SIFM_LOGIN_ATTEMPTS')) define('SIFM_LOGIN_ATTEMPTS', 5);
+if (!defined('SIFM_LOGIN_WINDOW')) define('SIFM_LOGIN_WINDOW', 300);
+
+## Read-only mode — true refuses every POST except the two that never touch a
+## file: the sign-in form and the search box. Browsing, downloading and the
+## editor's read views all keep working; nothing can be written, moved or
+## deleted. Flip it here, or set SIFM_READONLY before this file is loaded.
+if (!defined('SIFM_READONLY')) define('SIFM_READONLY', false);
+
+## Scope of every file operation + host used by "open in browser" links.
+## The document root by default: drop sifm.php into a folder and it manages
+## that folder. Define SIFM_HOME before this file is loaded to scope it
+## somewhere else instead.
+if (!defined('SIFM_HOME')) {
+    $root = (string) ($_SERVER['DOCUMENT_ROOT'] ?? '');
+    define('SIFM_HOME', $root !== '' && is_dir($root) ? $root : __DIR__);
+}
+if (!defined('SIFM_HOST')) define('SIFM_HOST', 'sifm.hiws.dev');
+if (!defined('SIFM_DATE')) define('SIFM_DATE', 'Y-m-d H:i');
 
 ## Largest file the editor opens in one textarea (bytes)
-define('SIFM_MAX_EDIT', 2097152);
+if (!defined('SIFM_MAX_EDIT')) define('SIFM_MAX_EDIT', 2097152);
 
 ## Largest file the importer pulls from a URL (bytes)
-define('SIFM_MAX_IMPORT', 26214400);
+if (!defined('SIFM_MAX_IMPORT')) define('SIFM_MAX_IMPORT', 26214400);
 
 /* Never allow an uploaded file to become executable if the web-server rules
  * are changed later. Source files can still be created and edited in place. */
-const SIFM_BLOCKED_UPLOAD_EXTENSIONS = ['cgi', 'fcgi', 'phar', 'phtml'];
+if (!defined('SIFM_BLOCKED_UPLOAD_EXTENSIONS')) {
+    define('SIFM_BLOCKED_UPLOAD_EXTENSIONS', ['cgi', 'fcgi', 'phar', 'phtml']);
+}
 
 /**** Routing table — a query flag (?action&f=path) picks the page.
  **** A new page registers in three places: here, $title in dispatch, and the
@@ -94,6 +131,17 @@ if ($action === null) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_ok()) {
     message('Your session token expired — please try again.', 2);
     redirect($action, $action === 'signin' ? '' : $f);
+}
+
+/* Read-only mode — after the CSRF check above, so a refused request is still
+ * a verified one. Sign in and search are the two POSTs that leave the files
+ * alone; everything else (create, upload, edit, move, delete, chmod, paste,
+ * the sort bar, …) is turned off. */
+if (SIFM_READONLY && $_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, ['signin', 'search'], true)) {
+    $why = 'Read-only mode — this file manager does not accept changes.';
+    json_out(['ok' => false, 'msg' => $why]); // fetch() gets JSON and stops here
+    message($why, 2);
+    redirect($action === 'multi' ? 'folder' : $action, $f);
 }
 
 if(post('multi')){
@@ -179,13 +227,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($action) {
 
     case 'signin':
+        /* Two throttles: a per-address tally of failures that a new session
+         * or a cleared cookie cannot reset, then the fixed pause below. */
+        if (($wait = login_tries()) > 0) {
+            $unit = $wait === 1 ? 'second' : 'seconds';
+            message("Too many failed sign-ins — try again in {$wait} {$unit}.", 0);
+            redirect('signin');
+        }
         sleep(1); // throttle brute force
         if (hash_equals(SIFM_ADMIN, post('username')) && password_verify(post('password'), SIFM_PASSWORD)) {
+            login_tries('clear');
             session_regenerate_id(true);
             $_SESSION[SIFM_ID]['auth'] = SIFM_ADMIN;
             message('You are now signed in!');
             redirect('folder');
         }
+        login_tries('fail');
         message('Sign in failed — invalid username or password.', 0);
         break;
 
@@ -877,6 +934,22 @@ pre.out { white-space: pre-wrap; overflow-wrap: anywhere; }
 <?php endif; ?>
 <?php endif; ?>
 <?= message() ?>
+<?php /* The hash of the password SiFM ships with ("sifm"). While
+       SIFM_PASSWORD still matches it, every signed-in page repeats the
+       reminder below; change the constant at the top and it disappears, and
+       so does SIFM_CREDENTIAL_WARNING = false. */ ?>
+<?php if ($action !== 'signin' && SIFM_CREDENTIAL_WARNING && SIFM_PASSWORD === '$2y$12$y5AGvg78jvOvZCH7eYU.lu8R8i8vNaiG7ZFAaUb.vu714rcmo56l2'): ?>
+<div class="alert alert-warning d-flex align-items-start gap-2 rounded-4 mb-3" role="alert">
+  <?= icon('triangle-exclamation') ?>
+  <span>
+    <strong>Change the default sign-in details.</strong>
+    SiFM is still using the password it ships with (<code>sifm</code>). Set a new
+    <code>SIFM_ADMIN</code> and <code>SIFM_PASSWORD</code> at the top of
+    <code>sifm.php</code> before this manager is reachable from the internet &mdash;
+    whoever signs in has full read and write access to every file here.
+  </span>
+</div>
+<?php endif; ?>
 <?php switch ($action): ?>
 <?php case 'signin': ?>
 <div class="d-flex align-items-center justify-content-center p-4" style="min-height:calc(100vh - 8rem)">
@@ -2152,6 +2225,65 @@ function csrf_field(): string
 function csrf_ok(): bool
 {
     return hash_equals(csrf(), post('csrf'));
+}
+
+/** Failed sign-ins for this client address: the seconds it still has to wait,
+ *  0 when it may try. $op is "check" to only read, "fail" to add one failure,
+ *  "clear" to forget the address after a successful sign-in.
+ *
+ *  One JSON file under the system temp folder holds every address, so the
+ *  tally outlives the session — dropping the cookie does not reset it — and
+ *  nothing is written into the project folder. The read-modify-write runs
+ *  under an exclusive lock, entries the window has passed are pruned on every
+ *  call, and a file that cannot be opened counts nothing: a broken temp
+ *  folder must never lock the owner out of their own manager. */
+function login_tries(string $op = 'check'): int
+{
+    if (SIFM_LOGIN_ATTEMPTS <= 0) {
+        return 0; // throttle switched off
+    }
+    $file = sys_get_temp_dir() . '/sifm-login.json';
+    $fh = @fopen($file, 'c+');
+    if ($fh === false) {
+        return 0;
+    }
+    /* /tmp is shared with every account on the machine: only ever trust a
+     * counter this worker owns, so a file planted by another local account
+     * cannot forge a tally. A mismatch counts nothing rather than locking
+     * anybody out. */
+    if (function_exists('posix_geteuid') && @fileowner($file) !== posix_geteuid()) {
+        fclose($fh);
+        return 0;
+    }
+    @chmod($file, 0600); // the file lists client addresses
+    flock($fh, LOCK_EX);
+    $data = json_decode((string) stream_get_contents($fh), true);
+    $data = is_array($data) ? $data : [];
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    $now = time();
+    foreach ($data as $key => $row) { // anything past the window is forgotten
+        if (!is_array($row) || (int) ($row[1] ?? 0) + SIFM_LOGIN_WINDOW < $now) {
+            unset($data[$key]);
+        }
+    }
+    if ($op === 'clear') {
+        unset($data[$ip]);
+    } elseif ($op === 'fail') {
+        $data[$ip] = [(int) ($data[$ip][0] ?? 0) + 1, $now];
+    }
+    $count = (int) ($data[$ip][0] ?? 0);
+    $wait = $count >= SIFM_LOGIN_ATTEMPTS
+        ? (int) ($data[$ip][1] ?? $now) + SIFM_LOGIN_WINDOW - $now
+        : 0;
+    if ($op !== 'check') {
+        ftruncate($fh, 0);
+        rewind($fh);
+        fwrite($fh, (string) json_encode($data));
+        fflush($fh);
+    }
+    flock($fh, LOCK_UN);
+    fclose($fh);
+    return max(0, $wait);
 }
 
 /** True when the request came in through fetch() from our own pages. */

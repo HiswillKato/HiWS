@@ -10,3 +10,7 @@
 # not to the repository. The folder itself is kept so a fresh checkout works.
 /sifm/home/*
 !/sifm/home/.gitkeep
+
+# The SiFM demo wrapper: it belongs to this server, not to the repository.
+# sifm/README.md has the ten lines it takes to recreate it.
+/sifm/demo/

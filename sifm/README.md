@@ -5,27 +5,139 @@ SiFM is a separate project, not hand-written here:
 - Source: <https://github.com/HiswillKato/SiFM>
 - Licence: MIT (see `LICENSE`)
 
-`sifm.php` is copied from upstream unchanged except for two lines near the top:
+`sifm.php` is copied from upstream with these local differences:
 
 1. A note saying where it came from.
-2. `SIFM_HOME` points at `home/` instead of the document root, so the manager
-   never lists or edits the application file itself. `home/` is ignored by git,
-   which means uploaded files survive a deploy.
+2. Every `SIFM_*` constant at the top is declared with `if (!defined(...))`,
+   so a value that is already set wins and nothing is ever defined twice —
+   the defaults can be edited in place, or set before the file is loaded.
+3. The shipped pair is `sifm` / `sifm`, and while the password is still that
+   one a reminder is repeated on every signed-in page. `SIFM_CREDENTIAL_WARNING`
+   hides the reminder without changing anything else.
+4. `SIFM_HOST` is pinned to `sifm.hiws.dev` instead of `$_SERVER['HTTP_HOST']`.
+5. `SIFM_READONLY` and the short block in the dispatch that refuses every POST
+   except the sign-in form and the search box.
+6. The sign-in throttle — `SIFM_LOGIN_ATTEMPTS` / `SIFM_LOGIN_WINDOW` and the
+   `login_tries()` tally the sign-in form consults.
+7. Hardening upstream does not have: `abs()` resolves each path through
+   `realpath()`, including its nearest existing ancestor, so a symlinked parent
+   cannot escape the scope; `import()` only fetches credential-free public
+   http(s) URLs and follows no redirects; `SIFM_BLOCKED_UPLOAD_EXTENSIONS`
+   keeps an upload from ever becoming executable; writes take `LOCK_EX`.
+
+The scope is the document root, which is what upstream does too — `SIFM_HOME`
+falls back to `$_SERVER['DOCUMENT_ROOT']`, then to the folder `sifm.php` sits
+in. So the manager does list `sifm.php`, `index.php` and `.user.ini` next to
+the uploaded files, and it can edit and delete them: that is what a file
+manager in the document root is for. Define `SIFM_HOME` before the file loads
+to point it somewhere narrower instead.
+
+## The vhost
 
 The vhost is in `/etc/nginx/conf.d/hiws.conf`. It serves this folder with
-`sifm.php` as the only executable script: every other `.php` under the folder is
-refused, so an uploaded PHP file can never run. `/assets/` is not used here —
-SiFM loads Bootstrap, Font Awesome and CodeMirror from their CDNs.
+three scripts and nothing else — `index.php` (the project home),
+`demo/index.php` (the manager) and `sifm.php` itself. Every other `.php`
+under the folder is refused, so an uploaded PHP file can never run.
+`/assets/` is not used here — SiFM loads Bootstrap, Font Awesome and
+CodeMirror from their CDNs.
+
+`.htaccess` in this folder is read by nginx's Lua layer, and it refuses
+`sifm.php` over HTTP:
+
+```apache
+<Files "sifm.php">
+    Require all denied
+</Files>
+```
+
+The script still runs, because the demo loads it with `require()` — this
+governs requests, not includes.
+
+## The demo on this server
+
+`demo/index.php` is the whole demo:
+
+```php
+define('SIFM_READONLY', true);
+define('SIFM_CREDENTIAL_WARNING', false);
+
+require dirname(__DIR__) . '/sifm.php';
+```
+
+It sets the two switches and then loads the manager, so the vendored file
+stays exactly as upstream has it and deleting the folder puts everything back
+to normal. The demo browses, searches and downloads, refuses every change
+with *"Read-only mode — this file manager does not accept changes."*, and
+shows no reminder about the default sign-in details.
+
+Because `.htaccess` refuses `/sifm.php`, this wrapper is the only way in:
+nobody can reach the unrestricted copy by asking for it directly.
+
+The folder is not in git — `.gitignore` has `/sifm/demo/` — so a deploy does
+not carry it. It belongs to this server; the snippet above is all it takes to
+recreate it anywhere else.
+
+## Change the default sign-in details
+
+> **The shipped login is `sifm` / `sifm`. Change both before this is reachable
+> from the internet.** Whoever signs in has full read and write access to every
+> file the manager can see.
+
+The account lives in `sifm.php`, at the top — there is no database:
+
+1. Make a hash of your own password:
+
+   ```bash
+   php -r "echo password_hash('yourpass', PASSWORD_DEFAULT), PHP_EOL;"
+   ```
+
+2. Set `SIFM_ADMIN` to your username and `SIFM_PASSWORD` to that hash.
+
+While `SIFM_PASSWORD` is still the value the file ships with, every signed-in
+page repeats this warning — it disappears on its own once the constant changes.
+The sign-in page stays clean; the reminder is for whoever is already inside.
+To silence it while the password is still the shipped one, set
+`SIFM_CREDENTIAL_WARNING` to `false`: the banner is then hidden everywhere,
+which changes nothing about who can sign in.
+
+## Sign-in throttle
+
+After `SIFM_LOGIN_ATTEMPTS` (5) failed sign-ins from one client address, that
+address is refused for `SIFM_LOGIN_WINDOW` (5 minutes) — correct password or
+not. The tally lives in a JSON file under the system temp folder, so starting
+a new session or clearing the cookie does not reset it, a successful sign-in
+clears it, and the file is written `0600` and only trusted when this PHP
+worker owns it. Both constants sit at the top of `sifm.php`; set the attempts
+to `0` to switch the throttle off.
+
+The address is `REMOTE_ADDR`, which nginx has already replaced with the real
+visitor — `set_real_ip_from` Cloudflare's ranges plus `real_ip_header
+CF-Connecting-IP`, both in `deploy/nginx/hiws.conf`. Without that every
+request would be counted against a Cloudflare edge address, and unrelated
+visitors would be locked out together. The app's `sleep(1)` per attempt still
+sits behind the tally as a second line.
+
+## Read-only mode
+
+Set `SIFM_READONLY` to `true` at the top of `sifm.php` — or define it before
+the file is loaded — and the manager stops accepting changes. Every POST is
+refused except the sign-in form and the search box, so browsing, downloading
+and the read views keep working while nothing can be created, uploaded, edited,
+moved or deleted. A refused request shows a warning on the page, and answers
+with JSON for the buttons that post through `fetch()`.
+
+This server uses it the second way: `demo/index.php` defines the constant
+before loading `sifm.php`, so the copy everyone is shown is read-only while
+the vendored file keeps its normal setting.
 
 ## Updating from upstream
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/HiswillKato/SiFM/main/sifm.php -o /tmp/sifm.php
-# re-apply the SIFM_HOME change, then:
+# re-apply, in this order: the vendored note; wrap every define in
+# if (!defined(...)); the sifm/sifm pair, the reminder and
+# SIFM_CREDENTIAL_WARNING; SIFM_HOST pinned to sifm.hiws.dev;
+# SIFM_READONLY and the dispatch block; the login throttle; then the
+# hardening in abs(), import() and SIFM_BLOCKED_UPLOAD_EXTENSIONS, then:
 cp /tmp/sifm.php sifm/sifm.php
 ```
-
-The admin account is configured in `sifm.php` (`SIFM_ADMIN`, `SIFM_PASSWORD`,
-a `password_hash()` value). Change the password there, not in the database.
-
-> **Security warning:** The default SiFM login is `sifm` / `sifm`. Change both the username and password in `sifm.php` immediately after installation, especially before exposing the manager to the internet.
