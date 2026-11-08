@@ -24,11 +24,12 @@ function projects(): array
    ------------------------------------------------------------------------- */
 
 /* Every published tool, already in the order the index groups them, so the
-   index needs one query rather than one per category. */
+   index needs one query rather than one per category. Miscellaneous is kept
+   last, so the catch-all group never cuts the list in two. */
 function tools(): array
 {
     return db()->query(
-        'SELECT title, description, url, icon, category FROM tools WHERE status = 1 ORDER BY category, title'
+        "SELECT title, description, url, icon, category FROM tools WHERE status = 1 ORDER BY CASE WHEN category = 'Miscellaneous' THEN 1 ELSE 0 END, category, title"
     )->fetch_all(MYSQLI_ASSOC);
 }
 
