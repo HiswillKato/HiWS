@@ -80,6 +80,53 @@ function san_list(string $value): string
     return implode("\n", $items);
 }
 
+/* A human-friendly certificate authority name, keeping the intermediate/common
+   name visible (e.g. "Let's Encrypt (R3)", "Google Trust Services (WR1)"). */
+function friendly_issuer(array $issuer): string
+{
+    $org = $issuer['O'] ?? $issuer['organizationName'] ?? '';
+    if (is_array($org)) {
+        $org = implode(', ', array_map('strval', $org));
+    }
+    $org = trim((string) $org);
+
+    $cn = $issuer['CN'] ?? $issuer['commonName'] ?? '';
+    if (is_array($cn)) {
+        $cn = implode(', ', array_map('strval', $cn));
+    }
+    $cn = trim((string) $cn);
+
+    $brands = [
+        "Let's Encrypt" => "Let's Encrypt",
+        'Google Trust Services LLC' => 'Google Trust Services',
+        'Google Trust Services' => 'Google Trust Services',
+        'DigiCert Inc' => 'DigiCert',
+        'DigiCert, Inc.' => 'DigiCert',
+        'DigiCert' => 'DigiCert',
+        'Amazon' => 'Amazon Trust Services',
+        'Amazon Trust Services' => 'Amazon Trust Services',
+        'Sectigo Limited' => 'Sectigo',
+        'COMODO CA Limited' => 'Sectigo (Comodo)',
+        'GlobalSign nv-sa' => 'GlobalSign',
+        'GlobalSign' => 'GlobalSign',
+        'ZeroSSL' => 'ZeroSSL',
+        'Cloudflare, Inc.' => 'Cloudflare',
+        'Microsoft Corporation' => 'Microsoft',
+        'Entrust, Inc.' => 'Entrust',
+        'GoDaddy.com, Inc.' => 'GoDaddy',
+    ];
+    $brand = $brands[$org] ?? $org;
+
+    if ($brand !== '' && $cn !== '' && strcasecmp($brand, $cn) !== 0) {
+        return $brand . ' (' . $cn . ')';
+    }
+    if ($brand !== '') {
+        return $brand;
+    }
+
+    return $cn;
+}
+
 /* Public key details in plain language. */
 function public_key_info(OpenSSLCertificate $cert): array
 {
@@ -181,6 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'cipher_bits'         => isset($crypto['cipher_bits']) ? (string) $crypto['cipher_bits'] : '',
                 'issued'              => (string) ($subject['CN'] ?? ''),
                 'subject'             => x509_name($subject),
+                'issuer_friendly'     => friendly_issuer($issuer),
                 'issuer'              => (string) ($issuer['CN'] ?? ''),
                 'issuer_name'         => x509_name($issuer),
                 'serial'              => (string) ($parsed['serialNumberHex'] ?? $parsed['serialNumber'] ?? ''),
@@ -214,9 +262,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $s = $p['subject'] ?? [];
                 $i = $p['issuer'] ?? [];
                 $u = (int) ($p['validTo_time_t'] ?? 0);
+                $subject_name = (string) ($s['CN'] ?? x509_name($s));
+                $issuer_friendly = friendly_issuer($i);
+                $issuer_name = (string) ($i['CN'] ?? x509_name($i));
                 $chain[] = [
-                    'subject' => (string) ($s['CN'] ?? x509_name($s)),
-                    'issuer'  => (string) ($i['CN'] ?? x509_name($i)),
+                    'subject' => $subject_name,
+                    'issuer'  => $issuer_friendly !== '' && $issuer_friendly !== $issuer_name ? $issuer_friendly : $issuer_name,
                     'until'   => $u === 0 ? '' : date('j F Y', $u),
                     'sha256'  => strtoupper((string) openssl_x509_fingerprint($item, 'sha256')),
                 ];
@@ -258,7 +309,11 @@ require __DIR__ . '/../app/parts/tool.php';
     <div class="alert alert-<?= e($standing) ?> mt-4 d-flex align-items-center gap-2">
         <?= icon($standing === 'success' ? 'fa-solid fa-lock' : 'fa-solid fa-triangle-exclamation') ?>
         <span class="mb-0">
-            <strong><?= e($saying) ?></strong> —
+            <strong><?= e($saying) ?></strong>
+            <?php if ($details['issuer_friendly'] !== ''): ?>
+                — issued by <strong><?= e($details['issuer_friendly']) ?></strong>
+            <?php endif; ?>
+            —
             <?php if ($details['days'] < 0): ?>
                 it ran out <?= e((string) abs($details['days'])) ?> days ago.
             <?php else: ?>
@@ -273,28 +328,29 @@ require __DIR__ . '/../app/parts/tool.php';
                 <tbody>
                     <?php
                     $rows = [
-                        'Host'                => $details['host'],
-                        'Resolved address'    => $details['address'],
-                        'TLS protocol'        => $details['protocol'],
-                        'Cipher suite'        => $details['cipher'] . ($details['cipher_bits'] !== '' ? ' (' . $details['cipher_bits'] . ' bits)' : ''),
-                        'Issued to (CN)'      => $details['issued'],
-                        'Subject'             => $details['subject'],
-                        'Issuer (CN)'         => $details['issuer'],
-                        'Issuer'              => $details['issuer_name'],
-                        'Certificate version' => $details['version'],
-                        'Serial number'       => $details['serial'],
-                        'Valid from'          => $details['since'],
-                        'Valid until'         => $details['until'],
-                        'Public key'          => $details['public_key'],
-                        'Signature'           => trim($details['signature'] . ($details['signature_long'] !== '' ? ' (' . $details['signature_long'] . ')' : '')),
-                        'SHA-256 fingerprint' => $details['sha256'],
-                        'SHA-1 fingerprint'   => $details['sha1'],
-                        'Key usage'           => $details['key_usage'],
-                        'Extended key usage'  => $details['extended_key_usage'],
-                        'Basic constraints'   => $details['basic_constraints'],
-                        'OCSP responder'      => $details['ocsp'],
-                        'CA issuers'          => $details['ca_issuers'],
-                        'CRL distribution'    => $details['crl'],
+                        'Host'                    => $details['host'],
+                        'Resolved address'        => $details['address'],
+                        'TLS protocol'            => $details['protocol'],
+                        'Cipher suite'            => $details['cipher'] . ($details['cipher_bits'] !== '' ? ' (' . $details['cipher_bits'] . ' bits)' : ''),
+                        'Certificate authority'   => $details['issuer_friendly'],
+                        'Issuer intermediate (CN)' => $details['issuer'],
+                        'Issuer (full)'           => $details['issuer_name'],
+                        'Issued to (CN)'          => $details['issued'],
+                        'Subject'                 => $details['subject'],
+                        'Certificate version'     => $details['version'],
+                        'Serial number'           => $details['serial'],
+                        'Valid from'              => $details['since'],
+                        'Valid until'             => $details['until'],
+                        'Public key'              => $details['public_key'],
+                        'Signature'               => trim($details['signature'] . ($details['signature_long'] !== '' ? ' (' . $details['signature_long'] . ')' : '')),
+                        'SHA-256 fingerprint'     => $details['sha256'],
+                        'SHA-1 fingerprint'       => $details['sha1'],
+                        'Key usage'               => $details['key_usage'],
+                        'Extended key usage'      => $details['extended_key_usage'],
+                        'Basic constraints'       => $details['basic_constraints'],
+                        'OCSP responder'          => $details['ocsp'],
+                        'CA issuers'              => $details['ca_issuers'],
+                        'CRL distribution'        => $details['crl'],
                         'Subject alternate names' => $details['names'],
                     ];
 
