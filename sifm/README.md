@@ -16,14 +16,27 @@ SiFM is a separate project, not hand-written here:
    hides the reminder without changing anything else.
 4. `SIFM_HOST` is pinned to `sifm.hiws.dev` instead of `$_SERVER['HTTP_HOST']`.
 5. `SIFM_READONLY` and the short block in the dispatch that refuses every POST
-   except the sign-in form and the search box.
+   except the sign-in form and the search box. Multi-select is reassigned only
+   from the folder listing (`?folder=` + `multi=1`), so `?signin=` / `?search=`
+   can never run a multi action behind the auth or read-only gates; the
+   confirmation screen posts to `?multi=` directly.
 6. The sign-in throttle — `SIFM_LOGIN_ATTEMPTS` / `SIFM_LOGIN_WINDOW` and the
-   `login_tries()` tally the sign-in form consults.
+   `login_tries()` tally the sign-in form consults. The tally lives in a
+   private per-UID directory under the system temp folder (`0700`,
+   `sifm-<uid>/login.json`, `0600`), trusted only when this worker owns it, so
+   a local account cannot pre-create or symlink it. The sign-in compares the
+   username and password unconditionally (no timing oracle).
 7. Hardening upstream does not have: `abs()` resolves each path through
    `realpath()`, including its nearest existing ancestor, so a symlinked parent
-   cannot escape the scope; `import()` only fetches credential-free public
-   http(s) URLs and follows no redirects; `SIFM_BLOCKED_UPLOAD_EXTENSIONS`
-   keeps an upload from ever becoming executable; writes take `LOCK_EX`.
+   cannot escape the scope; `import()` resolves once and pins the connection to
+   the checked public addresses (Host/SNI name the original host, no redirects,
+   no credentials) to close DNS-rebinding TOCTOU; `SIFM_BLOCKED_SERVER_FILES`
+   (`.htaccess`, `.user.ini`, `web.config`) are never created, edited, moved,
+   renamed, chmodded or deleted; `SIFM_BLOCKED_UPLOAD_EXTENSIONS` blocks
+   server-executable names on content entering from outside (upload, import,
+   extract, create) while leaving existing files editable/renameable in place;
+   `extract()` skips those names, enforces `SIFM_MAX_EXTRACT` /
+   `SIFM_MAX_EXTRACT_FILES` and checks free space; writes take `LOCK_EX`.
 8. `file_url()` builds the preview and "open in browser" addresses from where
    `SIFM_HOME` actually sits, so a scope narrower than the document root still
    resolves instead of asking for the file one level too high.
@@ -117,11 +130,13 @@ which changes nothing about who can sign in.
 
 After `SIFM_LOGIN_ATTEMPTS` (5) failed sign-ins from one client address, that
 address is refused for `SIFM_LOGIN_WINDOW` (5 minutes) — correct password or
-not. The tally lives in a JSON file under the system temp folder, so starting
-a new session or clearing the cookie does not reset it, a successful sign-in
-clears it, and the file is written `0600` and only trusted when this PHP
-worker owns it. Both constants sit at the top of `sifm.php`; set the attempts
-to `0` to switch the throttle off.
+not. The tally lives in a private per-UID directory under the system temp
+folder (`0700`, `sifm-<uid>/login.json`, `0600`), trusted only when this PHP
+worker owns the directory and file, so starting a new session or clearing the
+cookie does not reset it, a successful sign-in clears it, and another local
+account cannot pre-create or symlink it. A temp folder that cannot be used is
+counted as no failures (fail-open), never as a lockout. Both constants sit at
+the top of `sifm.php`; set the attempts to `0` to switch the throttle off.
 
 The address is `REMOTE_ADDR`, which nginx has already replaced with the real
 visitor — `set_real_ip_from` Cloudflare's ranges plus `real_ip_header
@@ -150,8 +165,12 @@ curl -fsSL https://raw.githubusercontent.com/HiswillKato/SiFM/main/sifm.php -o /
 # re-apply, in this order: the vendored note; wrap every define in
 # if (!defined(...)); the sifm/sifm pair, the reminder and
 # SIFM_CREDENTIAL_WARNING; SIFM_HOST pinned to sifm.hiws.dev;
-# SIFM_READONLY, its refusal message and the dispatch block; the login
-# throttle; file_url(); then the hardening in abs(), import() and
-# SIFM_BLOCKED_UPLOAD_EXTENSIONS, then:
+# SIFM_READONLY, its refusal message and the dispatch block (multi
+# reassigned only from ?folder=; ?multi= stays direct); the login
+# throttle (private per-UID temp dir, unconditional credential compare);
+# file_url(); then the hardening in abs(), import() (resolve-once,
+# connect-pinned), SIFM_BLOCKED_SERVER_FILES / the extended
+# SIFM_BLOCKED_UPLOAD_EXTENSIONS and their guards on every write path,
+# and extract()'s entry whitelist + zip-bomb caps, then:
 cp /tmp/sifm.php sifm/sifm.php
 ```

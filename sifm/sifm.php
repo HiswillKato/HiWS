@@ -62,10 +62,28 @@ if (!defined('SIFM_MAX_EDIT')) define('SIFM_MAX_EDIT', 2097152);
 ## Largest file the importer pulls from a URL (bytes)
 if (!defined('SIFM_MAX_IMPORT')) define('SIFM_MAX_IMPORT', 26214400);
 
-/* Never allow an uploaded file to become executable if the web-server rules
- * are changed later. Source files can still be created and edited in place. */
+## What an extracted archive may claim: total uncompressed bytes and number of
+## entries. A zip bomb would otherwise fill the disk or the request.
+if (!defined('SIFM_MAX_EXTRACT')) define('SIFM_MAX_EXTRACT', 536870912);
+if (!defined('SIFM_MAX_EXTRACT_FILES')) define('SIFM_MAX_EXTRACT_FILES', 100000);
+
+/* Content coming in from outside — an upload, an import, an archive entry —
+ * never lands under a name the web server would execute if its rules ever
+ * changed. A source file that is already here can still be edited in place. */
 if (!defined('SIFM_BLOCKED_UPLOAD_EXTENSIONS')) {
-    define('SIFM_BLOCKED_UPLOAD_EXTENSIONS', ['cgi', 'fcgi', 'phar', 'phtml']);
+    define('SIFM_BLOCKED_UPLOAD_EXTENSIONS', [
+        'cgi', 'fcgi', 'phar', 'phtml', 'php', 'php3', 'php4', 'php5', 'php7', 'php8',
+        'pht', 'shtml',
+    ]);
+}
+
+/* Files the web server reads on its own. The manager never creates, edits,
+ * moves, renames, chmods or deletes one of these, in any direction:
+ * .htaccess holds the rule that refuses /sifm.php over HTTP, and .user.ini is
+ * read by PHP-FPM for every script in its directory — an auto_prepend_file
+ * inside one would turn the next request into code. */
+if (!defined('SIFM_BLOCKED_SERVER_FILES')) {
+    define('SIFM_BLOCKED_SERVER_FILES', ['.htaccess', '.user.ini', 'web.config']);
 }
 
 /**** Routing table — a query flag (?action&f=path) picks the page.
@@ -144,7 +162,12 @@ if (SIFM_READONLY && $_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action,
     redirect($action === 'multi' ? 'folder' : $action, $f);
 }
 
-if(post('multi')){
+/* The multi-select form posts to the folder listing, so only that entry may
+ * turn the request into a multi run: the auth and read-only gates above have
+ * already judged it under its own name, and letting ?signin= or ?search= do
+ * this would reach every handler behind them with no session at all. The
+ * confirmation screen posts to ?multi= directly and never comes through here. */
+if ($action === 'folder' && post('multi')) {
     $action = 'multi';
 }
 /* The requested path, as plain strings: "" means "root" or "not this kind". */
@@ -173,6 +196,10 @@ if (in_array($action, $needs_file, true) && $file === '') {
     redirect('folder');
 }
 if ($action === 'edit') {
+    if (fm::server_file($file)) {
+        message('That file is read by the web server itself — SiFM never writes to it.', 2);
+        redirect('file', $file);
+    }
     if (!$fm->writable($file)) {
         message('File is not writable — chmod it first, then edit.', 0);
         redirect('file', $file);
@@ -235,7 +262,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('signin');
         }
         sleep(1); // throttle brute force
-        if (hash_equals(SIFM_ADMIN, post('username')) && password_verify(post('password'), SIFM_PASSWORD)) {
+        /* Both halves are always computed: a short-circuit here would leave a
+         * measurable delay only for usernames that exist. */
+        $who  = hash_equals(SIFM_ADMIN, post('username'));
+        $pass = password_verify(post('password'), SIFM_PASSWORD);
+        if ($who && $pass) {
             login_tries('clear');
             session_regenerate_id(true);
             $_SESSION[SIFM_ID]['auth'] = SIFM_ADMIN;
@@ -2247,26 +2278,35 @@ function csrf_ok(): bool
  *  0 when it may try. $op is "check" to only read, "fail" to add one failure,
  *  "clear" to forget the address after a successful sign-in.
  *
- *  One JSON file under the system temp folder holds every address, so the
- *  tally outlives the session — dropping the cookie does not reset it — and
- *  nothing is written into the project folder. The read-modify-write runs
- *  under an exclusive lock, entries the window has passed are pruned on every
- *  call, and a file that cannot be opened counts nothing: a broken temp
- *  folder must never lock the owner out of their own manager. */
+ *  One JSON file holds every address, so the tally outlives the session —
+ *  dropping the cookie does not reset it — and nothing is written into the
+ *  project folder. It sits in a directory of our own under the system temp
+ *  folder (0700, named after this worker's uid): /tmp is shared with every
+ *  account on the machine, and a private directory is the only place where no
+ *  other account can pre-create the file, plant a symlink in it or forge a
+ *  tally. The read-modify-write runs under an exclusive lock, entries the
+ *  window has passed are pruned on every call, and a directory or file that
+ *  cannot be opened counts nothing: a broken temp folder must never lock the
+ *  owner out of their own manager. */
 function login_tries(string $op = 'check'): int
 {
     if (SIFM_LOGIN_ATTEMPTS <= 0) {
         return 0; // throttle switched off
     }
-    $file = sys_get_temp_dir() . '/sifm-login.json';
+    $uid = function_exists('posix_geteuid') ? posix_geteuid() : getmyuid();
+    $dir = rtrim(sys_get_temp_dir(), '/') . '/sifm-' . $uid;
+    if (!is_dir($dir) && !@mkdir($dir, 0700)) {
+        return 0;
+    }
+    if (function_exists('posix_geteuid') && (is_link($dir) || @fileowner($dir) !== posix_geteuid())) {
+        return 0;
+    }
+    $file = $dir . '/login.json';
     $fh = @fopen($file, 'c+');
     if ($fh === false) {
         return 0;
     }
-    /* /tmp is shared with every account on the machine: only ever trust a
-     * counter this worker owns, so a file planted by another local account
-     * cannot forge a tally. A mismatch counts nothing rather than locking
-     * anybody out. */
+    /* Only ever trust a counter this worker owns, whatever got the file there. */
     if (function_exists('posix_geteuid') && @fileowner($file) !== posix_geteuid()) {
         fclose($fh);
         return 0;
@@ -2457,6 +2497,31 @@ class fm
         return $this->home . '/.sifm-invalid-' . hash('sha256', $relative);
     }
 
+    /** True for a file the web server reads on its own: .htaccess, .user.ini,
+     *  web.config — anywhere in the scope, at any depth. The manager refuses
+     *  to create, change, move, rename, chmod or delete one of these. */
+    public static function server_file(string $name): bool
+    {
+        $base = strtolower(basename(str_replace('\\', '/', $name)));
+        foreach (SIFM_BLOCKED_SERVER_FILES as $guarded) {
+            if ($base === strtolower($guarded)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True for a name content coming in from outside may not carry: one the
+     *  web server would execute if its rules ever changed. Applies where new
+     *  content enters — upload, import, extract, create — never to a rename
+     *  or a copy of something already here. */
+    public static function new_code(string $name): bool
+    {
+        $base = basename(str_replace('\\', '/', $name));
+        $ext = strtolower((string) pathinfo($base, PATHINFO_EXTENSION));
+        return in_array($ext, SIFM_BLOCKED_UPLOAD_EXTENSIONS, true);
+    }
+
     public function exists(string $path): bool
     {
         return file_exists($this->abs($path));
@@ -2514,13 +2579,16 @@ class fm
             $dir = $dir === 'folder';
         }
         $name = path($name);
-        if ($name === '') {
+        if ($name === '' || self::server_file($name)) {
             return false;
         }
         if ($dir) {
             return is_dir($this->abs($name)) || mkdir($this->abs($name), 0755, true);
         }
-        return file_exists($this->abs($name)) || file_put_contents($this->abs($name), '') !== false;
+        if (file_exists($this->abs($name))) {
+            return true; // nothing new is created, so nothing new has to be checked
+        }
+        return !self::new_code($name) && file_put_contents($this->abs($name), '') !== false;
     }
 
     /** Accept an octal string or mode integer; optionally apply it recursively. */
@@ -2533,7 +2601,7 @@ class fm
             return false;
         }
         $target = path($target);
-        if ($target === '' || !file_exists($this->abs($target))) {
+        if ($target === '' || self::server_file($target) || !file_exists($this->abs($target))) {
             return false;
         }
         $mode = is_int($mod) ? $mod : intval($mod, 8);
@@ -2557,7 +2625,7 @@ class fm
     {
         $from = path($from);
         $to = path($to);
-        if ($from === '' || $to === '' || $from === $to || str_starts_with($to, $from . '/')) {
+        if ($from === '' || $to === '' || self::server_file($to) || $from === $to || str_starts_with($to, $from . '/')) {
             return false;
         }
         if ($this->isfolder($from)) {
@@ -2584,7 +2652,7 @@ class fm
     {
         $from = path($from);
         $to = path($to);
-        if ($from === '' || $to === '') {
+        if ($from === '' || $to === '' || self::server_file($from) || self::server_file($to)) {
             return false;
         }
         if (!$this->ensure(dirname($to))) {
@@ -2597,21 +2665,29 @@ class fm
     public function rename(string $from, string $new_name): bool
     {
         $from = path($from);
-        if ($from === '' || $new_name === '' || str_contains($new_name, '/')) {
+        if ($from === '' || $new_name === '' || str_contains($new_name, '/')
+            || self::server_file($from) || self::server_file($new_name)) {
             return false;
         }
         $dest = path(dirname($from) . '/' . $new_name);
         return rename($this->abs($from), $this->abs($dest));
     }
 
-    /** Delete for real — recursive unlink. */
+    /** Delete for real — recursive unlink. A server file stops the removal:
+     *  a folder that holds one cannot go, so the configuration the web server
+     *  reads is never half-deleted. */
     public function delete(string $target): bool
     {
         $target = path($target);
-        if ($target === '' || !file_exists($this->abs($target))) {
+        if ($target === '' || self::server_file($target) || !file_exists($this->abs($target))) {
             return false;
         }
         if ($this->isfolder($target)) {
+            foreach ($this->list($target, true, true) as $item) {
+                if (self::server_file($item)) {
+                    return false;
+                }
+            }
             foreach ($this->list($target) as $item) {
                 $this->delete($target . '/' . $item);
             }
@@ -2640,7 +2716,9 @@ class fm
     {
         $paths = is_array($paths) ? $paths : [$paths];
         $out = path($out);
-        if ($out === '') {
+        /* A zip written under an executable name would run its stored contents
+         * as code, and a zip is not a place the server reads config from. */
+        if ($out === '' || self::server_file($out) || self::new_code($out)) {
             return false;
         }
         $zip = new ZipArchive();
@@ -2677,7 +2755,11 @@ class fm
         }
         $paths = [];
         foreach ($targets as $target) {
-            $paths = [...$paths, ...$this->collect($target)];
+            if ($target === '') {
+                $paths = [...$paths, ...$this->list('', true, true)];
+            } else {
+                $paths = [...$paths, ...$this->collect($target)];
+            }
         }
         return $this->zip($paths, $name);
     }
@@ -2690,6 +2772,16 @@ class fm
         if ($file === '' || $zip->open($this->abs($file)) !== true) {
             return false;
         }
+        if ($zip->numFiles > SIFM_MAX_EXTRACT_FILES) {
+            $zip->close();
+            return false;
+        }
+        /* Validate every entry before the first byte is written: no traversal
+         * and no symlinks. Names the server would execute or read as
+         * configuration stay in the archive — everything else still extracts.
+         * The size total only counts what will actually be written. */
+        $total = 0;
+        $allowed = [];
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
             $entry = str_replace('\\', '/', (string) $name);
@@ -2704,12 +2796,27 @@ class fm
                 $zip->close();
                 return false;
             }
+            if (!str_ends_with($entry, '/') && (self::server_file($entry) || self::new_code($entry))) {
+                continue; // left in the archive — not written to the scope
+            }
+            $allowed[] = (string) $name;
+            $stat = $zip->statIndex($i);
+            $total += $stat === false ? 0 : (int) ($stat['size'] ?? 0);
+        }
+        if ($total > SIFM_MAX_EXTRACT) {
+            $zip->close();
+            return false;
         }
         if ($dest !== '' && !$this->ensure($dest)) {
             $zip->close();
             return false;
         }
-        $ok = $zip->extractTo($this->abs($dest));
+        $free = disk_free_space($this->abs($dest));
+        if ($free !== false && $total > (int) $free) { // it could not fit, whatever the headers claim
+            $zip->close();
+            return false;
+        }
+        $ok = $allowed === [] ? true : $zip->extractTo($this->abs($dest), $allowed);
         $zip->close();
         return $ok;
     }
@@ -2723,9 +2830,8 @@ class fm
     {
         $dir = path($dir);
         $name = basename((string) ($file['name'] ?? ''));
-        $extension = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
         if ($name === '' || str_contains($name, chr(0))
-            || in_array($extension, SIFM_BLOCKED_UPLOAD_EXTENSIONS, true)
+            || self::server_file($name) || self::new_code($name)
             || !is_uploaded_file((string) ($file['tmp_name'] ?? ''))) {
             return false;
         }
@@ -2774,7 +2880,8 @@ class fm
     public function write(string $file, string $data = ''): bool
     {
         $file = path($file);
-        if ($file === '' || !$this->isfolder(dirname($file))) {
+        if ($file === '' || self::server_file($file) || self::new_code($file)
+            || !$this->isfolder(dirname($file))) {
             return false;
         }
         return file_put_contents($this->abs($file), $data, LOCK_EX) !== false;
@@ -2875,49 +2982,72 @@ class fm
         return 'data:' . $mime . ';base64,' . base64_encode($data);
     }
 
-    /** Fetch an http(s) URL into a home-relative destination. Other schemes
-     *  (file://, ftp:// …) are refused — this is not an SSRF Swiss army knife. */
-    /** Refuse loopback, link-local, private and reserved destinations. */
-function public_host(string $host): bool
-{
-    $records = filter_var($host, FILTER_VALIDATE_IP)
-        ? []
-        : (dns_get_record($host, DNS_A | DNS_AAAA) ?: []);
-    $addresses = filter_var($host, FILTER_VALIDATE_IP)
-        ? [$host]
-        : array_values(array_filter(array_merge(
-            array_column($records, 'ip'),
-            array_column($records, 'ipv6')
-        ), 'is_string'));
-    if ($addresses === []) {
-        return false;
-    }
-    foreach ($addresses as $address) {
-        if (!is_string($address) || filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-            return false;
+    /** Every address $host resolves to, when they are all public: nothing
+     *  loopback, link-local, private or reserved. One bad record spoils the
+     *  lot, and a name that resolves to nothing is refused as well. */
+    public function public_addresses(string $host): array
+    {
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            $addresses = [$host];
+        } else {
+            $records = dns_get_record($host, DNS_A | DNS_AAAA) ?: [];
+            $addresses = array_values(array_filter(array_merge(
+                array_column($records, 'ip'),
+                array_column($records, 'ipv6')
+            ), 'is_string'));
         }
+        foreach ($addresses as $address) {
+            if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                return [];
+            }
+        }
+        return $addresses;
     }
-    return true;
-}
 
-/** Stream a URL into $dest — null on success, or the one reason it failed. */
+    /** Stream a URL into $dest — null on success, or the one reason it failed.
+     *  Other schemes (file://, ftp:// …) are refused — this is not an SSRF
+     *  Swiss army knife — and redirects are not followed. The name is resolved
+     *  exactly once: public_addresses() judges the records, then the request
+     *  is pinned to one of those very addresses (Host, and for https the
+     *  certificate check, still name the original host), so a name that rebinds
+     *  between two lookups cannot turn this into a request to something
+     *  internal. */
     public function import(string $url, string $dest): ?string
     {
         $parts = parse_url(trim($url));
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = (string) ($parts['host'] ?? '');
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $port = (int) ($parts['port'] ?? 0);
+        $path = (string) ($parts['path'] ?? '');
+        $query = isset($parts['query']) ? '?' . $parts['query'] : '';
         if (!in_array($scheme, ['http', 'https'], true) || $host === ''
-            || isset($parts['user'], $parts['pass']) || !public_host($host)) {
+            || isset($parts['user']) || isset($parts['pass'])) {
             return 'Only public http(s) URLs can be imported.';
         }
-        $ctx = stream_context_create(['http' => [
-            'header'          => "Accept: */*\r\n",
-            'user_agent'      => SIFM_NAME . '/' . SIFM_VERSION,
-            'method'          => 'GET',
-            'timeout'         => 20,
-            'follow_location' => 0,
-        ]]);
-        $in = @fopen($url, 'rb', false, $ctx);
+        $addresses = $this->public_addresses($host);
+        if ($addresses === []) {
+            return 'Only public http(s) URLs can be imported.';
+        }
+        $authority = $port ? ':' . $port : '';
+        $host_line = $host . ($port && $port !== ($scheme === 'https' ? 443 : 80) ? ':' . $port : '');
+        $ctx = stream_context_create([
+            'http' => [
+                'header'          => "Accept: */*\r\nHost: {$host_line}\r\n",
+                'user_agent'      => SIFM_NAME . '/' . SIFM_VERSION,
+                'method'          => 'GET',
+                'timeout'         => 20,
+                'follow_location' => 0,
+            ],
+            'ssl' => ['peer_name' => $host], // the certificate has to be the host's, not the address's
+        ]);
+        $in = false;
+        foreach ($addresses as $address) {
+            $literal = str_contains($address, ':') ? '[' . $address . ']' : $address;
+            $in = @fopen($scheme . '://' . $literal . $authority . $path . $query, 'rb', false, $ctx);
+            if ($in !== false) {
+                break;
+            }
+        }
         if ($in === false) {
             return 'Could not reach that URL.';
         }
@@ -2938,6 +3068,10 @@ function public_host(string $host): bool
         if ($dest === '') {
             @unlink($tmp);
             return 'That name cannot be a file name.';
+        }
+        if (self::server_file($dest) || self::new_code($dest)) {
+            @unlink($tmp);
+            return 'That file name is not allowed.';
         }
         if (!@rename($tmp, $this->abs($dest)) && !@copy($tmp, $this->abs($dest))) { // rename first; copy when the filesystems differ
             @unlink($tmp);
