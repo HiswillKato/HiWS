@@ -17,6 +17,7 @@
 
 # Local/site-specific (not for GitHub)
 ads.txt
+app/config.local.php
 
 # Composer packages (installed locally; not committed)
 vendor/bacon/

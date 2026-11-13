@@ -208,7 +208,7 @@
 /* ---------------------------------------------------------------------------
    3. Base & typography.
    --------------------------------------------------------------------------- */
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
     min-height: 100vh;
@@ -216,6 +216,7 @@ body {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     scrollbar-color: rgba(var(--bs-body-color-rgb), .28) transparent;
+    overflow-x: hidden;
 }
 
 /* The ambient glow, and the faint grid over it. Both are fixed, so the page
@@ -224,7 +225,7 @@ body {
 body::before {
     content: "";
     position: fixed;
-    inset: -10%;
+    inset: 0;
     z-index: -2;
     pointer-events: none;
     background-image:
@@ -272,6 +273,7 @@ hr { opacity: .12; }
     font-weight: 600;
     letter-spacing: -.028em;
     line-height: 1.04;
+    overflow-wrap: break-word;
 }
 
 .eyebrow {

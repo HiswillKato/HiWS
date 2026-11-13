@@ -6,8 +6,8 @@ require __DIR__ . '/app/init.php';
 $title = 'Contact Us';
 
 /* The form posts to itself. Nothing is written to the database — a message is
-   handed to the mail server on this machine and nowhere else — so the only
-   state to keep is what the visitor typed, so a mistake does not wipe it. */
+   sent through SMTP and nowhere else — so the only state to keep is what the
+   visitor typed, so a mistake does not wipe it. */
 $sent   = false;
 $errors = [];
 $form   = ['name' => '', 'email' => '', 'subject' => '', 'message' => ''];
@@ -38,19 +38,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
 
     if ($errors === []) {
-        /* Every header is built from a value we produced or validated, never
-           from a raw field, so a newline in the email address cannot smuggle
-           in an extra header. Reply-To is the only value that comes from the
-           visitor, and it has just passed FILTER_VALIDATE_EMAIL. */
-        $headers = implode("\r\n", [
-            'From: ' . MAIL_FROM,
-            'Reply-To: ' . $form['email'],
-            'Content-Type: text/plain; charset=UTF-8',
-        ]);
-
         $body = wordwrap($form['message'] . "\n\n— " . $form['name'], 78);
+        $sent = smtp_mail(
+            MAIL_ADMIN,
+            MAIL_SUBJECT_PREFIX . $form['subject'],
+            $body,
+            $form['email']
+        );
 
-        $sent = @mail(MAIL_ADMIN, MAIL_SUBJECT_PREFIX . $form['subject'], $body, $headers);
+        if (!$sent) {
+            $errors[] = 'Your message could not be sent right now. Please try again later.';
+        }
     }
 }
 

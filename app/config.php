@@ -7,12 +7,16 @@ declare(strict_types=1);
    Every page starts at app/init.php, which requires this file first, so a
    setting added here is available everywhere and nowhere needs a second copy.
 
-   This file is committed on purpose: it holds only the local-machine
-   settings (root/root on this box) and no secrets beyond them. The live
-   server has its own copy of this file with its own database account, and
-   app/ is refused over HTTP by .htaccess, so nothing in here is readable
-   from the web.
+   Secrets and machine-local credentials live in app/config.local.php (not
+   committed). This tracked file keeps safe defaults only. The live server has
+   its own copy/config.local.php, and app/ is refused over HTTP by .htaccess.
    ========================================================================= */
+
+/* Local overrides (secrets, machine-specific settings). Not committed. */
+$local = __DIR__ . '/config.local.php';
+if (is_file($local)) {
+    require $local;
+}
 
 /* -------------------------------------------------------------------------
    1. Identity
@@ -25,29 +29,29 @@ define('SITE_YEAR', 2022);            /* the year the first HiWS project went up
 
 /* The words every page carries unless it names its own. A tool page passes
    its row's keywords instead, which is what that column is for. */
-define('SITE_KEYWORDS', 'hiws, hiswill web stack, hiswill kato, free web tools, online bible, free web projects, developer tools, uganda');
+define('SITE_KEYWORDS', 'hiws, hiswill web stack, hiswill kato, free web tools, online bible, free web projects, developer tools, uganda, web utilities, calculator, seo, keywords, converter, lookup, generator, bible study, scripture, password, ssl, ip address, dns, hash, encoding, compression, math, finance, uganda resources');
 
 /* The real public address. Used for canonical links and the sitemap only;
    the site itself answers to whatever name the visitor typed. */
-define('SITE_DOMAIN', 'hiws.eu.org');
+define('SITE_DOMAIN', 'hiws.dev');
 
 /* -------------------------------------------------------------------------
    2. Contact
    ------------------------------------------------------------------------- */
 
-define('SITE_EMAIL', 'contact@hiws.eu.org');
-define('SITE_PHONE', '+256761236205');
-define('SITE_WHATSAPP', '256761236205');
+define('SITE_EMAIL', 'hiwstack@gmail.com');
+define('SITE_PHONE', '+256751884466');
+define('SITE_WHATSAPP', '256751884466');
 define('SITE_LOCATION', '7V2V+36W Bbanda, Mityana');
 
 /* -------------------------------------------------------------------------
    3. Database
    ------------------------------------------------------------------------- */
 
-define('DB_HOST', '127.0.0.1');
-define('DB_USER', 'root');
-define('DB_PASS', 'root');
-define('DB_NAME', 'hiws');
+if (!defined('DB_HOST')) define('DB_HOST', '127.0.0.1');
+if (!defined('DB_USER')) define('DB_USER', '');
+if (!defined('DB_PASS')) define('DB_PASS', ''); /* set in app/config.local.php */
+if (!defined('DB_NAME')) define('DB_NAME', '');
 
 /* -------------------------------------------------------------------------
    4. Address
@@ -59,20 +63,26 @@ define('DB_NAME', 'hiws');
    address instead and it wins.
    ------------------------------------------------------------------------- */
 
-define('BASE_URL', '');
-define('HOSTS', ['hiws', 'www.hiws', 'hiws.eu.org', 'www.hiws.eu.org', 'localhost', '127.0.0.1']);
+define('BASE_URL', 'https://hiws.dev/');
+define('HOSTS', ['hiws.dev', 'www.hiws.dev', '*.hiws.dev']);
 
 /* -------------------------------------------------------------------------
    5. Mail
 
-   The contact form hands messages to the mail server on this machine, which
-   is Postfix on loopback. MAIL_USER stays empty for an unauthenticated
-   local relay; a provider that needs a login sets it (and MAIL_PASS) here.
+   The contact form sends through SMTP. The app password is stored here on
+   purpose for this machine; app/ is refused over HTTP, so it is not readable
+   from the web. The live server keeps its own copy of this file.
    ------------------------------------------------------------------------- */
 
-define('MAIL_FROM', 'noreply@mail.local');
-define('MAIL_ADMIN', 'admin@mail.local');
+define('MAIL_FROM', 'hiwstack@gmail.com');
+define('MAIL_ADMIN', 'hiwstack@gmail.com');
 define('MAIL_SUBJECT_PREFIX', '[' . SITE_NAME . '] ');
+
+if (!defined('SMTP_HOST')) define('SMTP_HOST', 'smtp.gmail.com');
+if (!defined('SMTP_PORT')) define('SMTP_PORT', 587);
+if (!defined('SMTP_USER')) define('SMTP_USER', 'hiwstack@gmail.com');
+if (!defined('SMTP_PASS')) define('SMTP_PASS', ''); /* set in app/config.local.php */
+if (!defined('SMTP_SECURE')) define('SMTP_SECURE', 'tls');
 
 /* -------------------------------------------------------------------------
    6. The Bible
@@ -95,6 +105,19 @@ define('BIBLE_DEFAULT', 'KJV');
 
 /* true while working on the site, so PHP shows every error on screen. */
 define('SHOW_ERRORS', false);
+
+/* -------------------------------------------------------------------------
+   8. OpenGraph & Twitter Cards
+   ------------------------------------------------------------------------- */
+
+/* Default social image when no page-specific image is set. */
+define('OG_IMAGE', 'https://hiws.dev/images/logo-social.png');
+
+/* The site name for og:site_name and twitter:site. */
+define('OG_SITE_NAME', SITE_NAME);
+
+/* Twitter handle for twitter:site. Leave empty if none. */
+define('TWITTER_HANDLE', '@hiswillkato');
 
 /* Verses shown per page of Bible search results. */
 define('PER_PAGE', 20);

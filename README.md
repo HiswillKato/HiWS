@@ -33,7 +33,7 @@ Encrypt certificate covers all three domains plus a wildcard for each.
 
 ```
 app/            machinery — never served over HTTP
-  config.php    the one settings file (identity, contact, database, mail)
+  config.php    the one settings file (identity, contact, database, mail, SMTP)
   projects.php  PROJECTS — the names that answer on their own subdomain
   init.php      the first line of every page; loads the rest in order
   db.php        the shared MySQLi connection, reached through db()

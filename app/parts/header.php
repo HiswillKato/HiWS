@@ -28,6 +28,27 @@ $nav = [
 <meta name="author" content="Hiswill Kato">
 <meta name="theme-color" content="#0b0908">
 <meta name="theme-color" content="#fdf3ea" media="(prefers-color-scheme: light)">
+
+<!-- OpenGraph -->
+<link rel="profile" href="https://gmpg.org/xfn/11">
+<link rel="pingback" href="<?= url('contact') ?>">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.google.com" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<meta property="og:type" content="website">
+<meta property="og:title" content="<?= e($title ?? SITE_NAME) ?> &middot; <?= e(SITE_NAME) ?>">
+<meta property="og:description" content="<?= e($description ?? SITE_FULL_NAME . ' — ' . SITE_TAGLINE) ?>">
+<meta property="og:url" content="<?= e(current_url()) ?>">
+<meta property="og:image" content="<?= e(OG_IMAGE) ?>">
+<meta property="og:site_name" content="<?= e(OG_SITE_NAME) ?>">
+
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary">
+<?php if (defined('TWITTER_HANDLE') && TWITTER_HANDLE): ?>
+<meta name="twitter:title" content="<?= e($title ?? SITE_NAME) ?> &middot; <?= e(SITE_NAME) ?>">
+<meta name="twitter:description" content="<?= e($description ?? SITE_FULL_NAME . ' — ' . SITE_TAGLINE) ?>">
+<meta name="twitter:site" content="<?= e(TWITTER_HANDLE) ?>">
+<?php endif; ?>
 <?php /* The address as typed, without its query, so /tools/hash and
       /bible/john/3 each name themselves rather than their script. A trailing
       slash is dropped, because /tools and /tools/ are one page. On a project

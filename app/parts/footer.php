@@ -50,7 +50,7 @@ $legal = [
 
         <p class="text-body-secondary small mb-0">
             &copy; <?= e((string) SITE_YEAR) ?> &ndash; <?= e(date('Y')) ?> <?= e(SITE_NAME) ?>.
-            Built by Hiswill Kato.
+            Built with ♥️ by <a href="https://hiswill.tech">Hiswill</a>.
         </p>
     </div>
 </footer>
@@ -58,6 +58,17 @@ $legal = [
 <button id="top" class="btn btn-primary rounded-circle" hidden aria-label="Back to top">
     <?= icon('fa-solid fa-arrow-up') ?>
 </button>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "HiWS",
+    "url": "https://hiws.dev",
+    "logo": "https://hiws.dev/images/logo.svg",
+    "description": "Free web projects and tools for everyone"
+}
+</script>
 
 <script src="<?= asset('js/bootstrap.bundle.min.js') ?>" defer></script>
 <script src="<?= asset('js/theme.js') ?>" defer></script>

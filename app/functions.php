@@ -443,7 +443,137 @@ function translation(): string
 }
 
 /* -------------------------------------------------------------------------
-   4. The contact form
+   4. Mail
+   ------------------------------------------------------------------------- */
+
+/* Send a plain-text message through SMTP. Returns true only when the server
+   accepts the message for delivery. Kept minimal on purpose: it speaks just
+   enough SMTP for an authenticated submission over STARTTLS. */
+function smtp_mail(string $to, string $subject, string $body, string $replyTo = ''): bool
+{
+    $host = defined('SMTP_HOST') ? SMTP_HOST : '';
+    $port = defined('SMTP_PORT') ? (int) SMTP_PORT : 587;
+    $user = defined('SMTP_USER') ? SMTP_USER : '';
+    $pass = defined('SMTP_PASS') ? SMTP_PASS : '';
+    $from = defined('MAIL_FROM') ? MAIL_FROM : $user;
+
+    if ($host === '' || $user === '' || $pass === '' || $from === '') {
+        return false;
+    }
+
+    $read = static function ($socket): string {
+        $data = '';
+        while (!feof($socket)) {
+            $line = fgets($socket, 515);
+            if ($line === false) {
+                break;
+            }
+            $data .= $line;
+            if (isset($line[3]) && $line[3] === ' ') {
+                break;
+            }
+        }
+        return $data;
+    };
+
+    $expect = static function ($socket, array $codes) use ($read): bool {
+        $response = $read($socket);
+        $code = (int) substr($response, 0, 3);
+        return in_array($code, $codes, true);
+    };
+
+    $write = static function ($socket, string $line) use ($expect): bool {
+        if (fwrite($socket, $line . "\r\n") === false) {
+            return false;
+        }
+        return true;
+    };
+
+    $command = static function ($socket, string $line, array $codes) use ($write, $expect): bool {
+        return $write($socket, $line) && $expect($socket, $codes);
+    };
+
+    $socket = @stream_socket_client('tcp://' . $host . ':' . $port, $errno, $errstr, WAIT);
+    if ($socket === false) {
+        return false;
+    }
+
+    stream_set_timeout($socket, WAIT);
+
+    try {
+        if (!$expect($socket, [220])) {
+            return false;
+        }
+        if (!$command($socket, 'EHLO ' . host_name(), [250])) {
+            return false;
+        }
+
+        if ((defined('SMTP_SECURE') ? SMTP_SECURE : 'tls') === 'tls') {
+            if (!$command($socket, 'STARTTLS', [220])) {
+                return false;
+            }
+            $crypto = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            if ($crypto !== true) {
+                return false;
+            }
+            if (!$command($socket, 'EHLO ' . host_name(), [250])) {
+                return false;
+            }
+        }
+
+        if (!$command($socket, 'AUTH LOGIN', [334])) {
+            return false;
+        }
+        if (!$command($socket, base64_encode($user), [334])) {
+            return false;
+        }
+        if (!$command($socket, base64_encode($pass), [235])) {
+            return false;
+        }
+
+        if (!$command($socket, 'MAIL FROM:<' . $from . '>', [250])) {
+            return false;
+        }
+        if (!$command($socket, 'RCPT TO:<' . $to . '>', [250, 251])) {
+            return false;
+        }
+        if (!$command($socket, 'DATA', [354])) {
+            return false;
+        }
+
+        $headers = [
+            'From: ' . $from,
+            'To: ' . $to,
+            'Subject: ' . $subject,
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: 8bit',
+            'Date: ' . date('r'),
+        ];
+        if ($replyTo !== '' && preg_match('/^[^\r\n]+$/', $replyTo)) {
+            $headers[] = 'Reply-To: ' . $replyTo;
+        }
+
+        $data = implode("\r\n", $headers) . "\r\n\r\n"
+            . preg_replace("/\r\n|\r|\n/", "\r\n", $body);
+        $data = str_replace("\n.", "\n..", str_replace("\r\n.", "\r\n..", $data));
+
+        if (!$write($socket, $data . "\r\n.")) {
+            return false;
+        }
+        if (!$expect($socket, [250])) {
+            return false;
+        }
+
+        $write($socket, 'QUIT');
+        return true;
+    } finally {
+        fclose($socket);
+    }
+}
+
+/* -------------------------------------------------------------------------
+   5. The contact form
    ------------------------------------------------------------------------- */
 
 /* One hidden field, and the matching check. The token lives in the session,
