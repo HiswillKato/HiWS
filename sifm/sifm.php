@@ -91,7 +91,7 @@ if (!defined('SIFM_BLOCKED_SERVER_FILES')) {
  **** render switch at the bottom. Missing any one silently falls back home. ****/
 $actions = [
     'signin', 'signout', 'folder', 'edit', 'source', 'backup', 'copy', 'move',
-    'import', 'upload', 'create', 'download', 'delete', 'file', 'chmod',
+    'import', 'upload', 'create', 'download', 'view', 'delete', 'file', 'chmod',
     'extract', 'rename', 'syntax', 'multi', 'search', 'duplicate', 'clip',
     'paste', 'image',
 ];
@@ -531,6 +531,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 /**** GET-only shortcuts — run before any output so headers still fly. ****/
 if ($action === 'download') {
     $fm->download($file);
+}
+if ($action === 'view') {
+    $fm->view($file);
 }
 if ($action === 'signout') {
     session_destroy();
@@ -1173,9 +1176,9 @@ pre.out { white-space: pre-wrap; overflow-wrap: anywhere; }
     $info = (object) $fm->info($file);
     $ext = strtolower((string) ($info->extension ?? ''));
     $editable = in_array($ext, fm::edit, true);
-    /* What the browser can show on its own. The file lives inside SIFM_HOME,
-       which is not always the document root, so file_url() works out the
-       address the file can actually be fetched at. */
+    /* What the browser can show on its own. Files are streamed through the
+       manager (?view=), never fetched by a direct URL, so SIFM_HOME can live
+       outside the web root without breaking previews or "open in browser". */
     $preview = match ($ext) {
         'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp', 'svg' => 'image',
         'pdf' => 'pdf',
@@ -1184,7 +1187,7 @@ pre.out { white-space: pre-wrap; overflow-wrap: anywhere; }
         'md' => 'markdown',
         default => '',
     };
-    $src = '//' . SIFM_HOST . file_url($file);
+    $src = url('view', $file);
 ?>
 <div class="panel-head">
   <h1 class="h5 mb-0">File details</h1>
@@ -2854,6 +2857,43 @@ class fm
         header('Content-Length: ' . filesize($this->abs($file)));
         header('Cache-Control: no-store');
         readfile($this->abs($file));
+        exit;
+    }
+
+    /** Stream a file inline for previews and in-browser viewing. Served through
+     *  the manager (authenticated, scoped) so files never need to be directly
+     *  reachable by URL — SIFM_HOME can live outside the web root. */
+    public function view(string $file): void
+    {
+        $file = path($file);
+        if ($file === '' || !$this->isfile($file)) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'File not found.';
+            exit;
+        }
+        $abs = $this->abs($file);
+        $info = $this->info($file);
+        $mime = is_string($info['mimetype'] ?? null) && $info['mimetype'] !== ''
+            ? $info['mimetype'] : 'application/octet-stream';
+        $name = str_replace(['"', "\r", "\n"], '', basename($file));
+        $ext = strtolower((string) ($info['extension'] ?? ''));
+
+        /* A raw file response does not carry the app page's CSP. Renderable
+         * documents (HTML/SVG/XML) must not execute scripts in this origin if
+         * opened directly, so sandbox them; everything else is served inline
+         * with nosniff for previews and "open in browser". */
+        if (in_array($ext, ['html', 'htm', 'xhtml', 'svg', 'xml'], true)) {
+            header("Content-Security-Policy: sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; media-src 'self'");
+        } else {
+            header("Content-Security-Policy: default-src 'none'");
+        }
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: inline; filename="' . $name . '"');
+        header('Content-Length: ' . filesize($abs));
+        header('Cache-Control: private, no-store');
+        readfile($abs);
         exit;
     }
 

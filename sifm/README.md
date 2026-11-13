@@ -37,25 +37,39 @@ SiFM is a separate project, not hand-written here:
    extract, create) while leaving existing files editable/renameable in place;
    `extract()` skips those names, enforces `SIFM_MAX_EXTRACT` /
    `SIFM_MAX_EXTRACT_FILES` and checks free space; writes take `LOCK_EX`.
+8. File content is streamed through the manager (`?view=` for inline
+   previews/"open", `?download=` for attachment), never by a direct URL, so
+   `SIFM_HOME` can live outside the web root and files in scope are not
+   directly fetchable. The view handler sets `nosniff`, `private, no-store`
+   caching, and sandboxes renderable documents (HTML/SVG/XML). Previews and the
+   "Open" action use the handler instead of `file_url()`.
 8. `file_url()` builds the preview and "open in browser" addresses from where
    `SIFM_HOME` actually sits, so a scope narrower than the document root still
    resolves instead of asking for the file one level too high.
 
-The scope is the document root, which is what upstream does too — `SIFM_HOME`
-falls back to `$_SERVER['DOCUMENT_ROOT']`, then to the folder `sifm.php` sits
-in. So the manager does list `sifm.php`, `index.php` and `.user.ini` next to
-the uploaded files, and it can edit and delete them: that is what a file
-manager in the document root is for. Define `SIFM_HOME` before the file loads
-to point it somewhere narrower instead.
+The scope defaults to the document root, which is what upstream does too —
+`SIFM_HOME` falls back to `$_SERVER['DOCUMENT_ROOT']`, then to the folder
+`sifm.php` sits in. Because file content is now streamed through the manager's
+handlers (not served by direct URL), **set `SIFM_HOME` to a directory outside
+the web root** for any writable or non-demo deployment and deny direct web
+access to that path. This keeps managed files from being directly fetchable
+even if a URL is guessed, while previews/downloads continue to work through the
+authenticated handlers. The public read-only demo on this server follows this
+posture: its scope is `/var/www/sifm-demo-data` (outside the docroot) and
+served only through the manager. If `SIFM_HOME` must live inside the web root,
+ensure the web server denies direct access to it (as this vhost does for
+`/demo/` and `/home/`). Define `SIFM_HOME` before the file loads to set it.
 
 ## The vhost
 
 The vhost is in `/etc/nginx/conf.d/hiws.conf`. It serves this folder with
 three scripts and nothing else — `index.php` (the project home),
 `demo/index.php` (the manager) and `sifm.php` itself. Every other `.php`
-under the folder is refused, so an uploaded PHP file can never run.
-`/assets/` is not used here — SiFM loads Bootstrap, Font Awesome and
-CodeMirror from their CDNs.
+under the folder is refused, so an uploaded PHP file can never run. Managed
+paths (`/demo/`, `/home/`) are denied direct access; file content is streamed
+only through SiFM's handlers (`?view`, `?download`), so files in scope are not
+directly fetchable by URL. `/assets/` is not used here — SiFM loads Bootstrap,
+Font Awesome and CodeMirror from their CDNs.
 
 `.htaccess` in this folder is read by nginx's Lua layer, and it refuses
 `sifm.php` over HTTP:
@@ -76,7 +90,7 @@ governs requests, not includes.
 ```php
 define('SIFM_READONLY', true);
 define('SIFM_CREDENTIAL_WARNING', false);
-define('SIFM_HOME', __DIR__);
+define('SIFM_HOME', '/var/www/sifm-demo-data');
 
 require dirname(__DIR__) . '/sifm.php';
 ```
@@ -90,18 +104,21 @@ normal:
   changes."*
 - **`SIFM_CREDENTIAL_WARNING`** — no reminder about the default sign-in
   details.
-- **`SIFM_HOME`** — the scope is the demo folder itself, so the file list
-  shows only what sits in there: the wrapper, a `notes/` folder, a markdown
-  file, a chart, a PDF and a ZIP. It can never see `sifm.php` or anything
-  else beside it.
+- **`SIFM_HOME`** — the scope is a data directory outside the web root
+  (`/var/www/sifm-demo-data`), so the file list shows only the sample content
+  there (a `notes/` folder, a markdown file, a chart, a PDF and a ZIP). It can
+  never see `sifm.php` or anything else beside it, and the sample files are not
+  directly fetchable by URL — content is streamed through SiFM's `?view` /
+  `?download` handlers.
 
 Because `.htaccess` refuses `/sifm.php`, this wrapper is the only way in:
 nobody can reach the unrestricted copy by asking for it directly.
 
 The folder is not in git — `.gitignore` has `/sifm/demo/` — so a deploy does
-not carry it. It belongs to this server: the snippet above is all it takes to
-recreate the wrapper, and the sample files are ordinary files dropped in
-beside it.
+not carry it. It belongs to this server: the wrapper above and the sample files
+placed in `/var/www/sifm-demo-data` (readable by the web server) are all it
+takes to recreate it. The read-only demo's sample content is intentionally
+public to signed-in demo visitors, but served only through the manager.
 
 ## Change the default sign-in details
 
@@ -168,6 +185,8 @@ curl -fsSL https://raw.githubusercontent.com/HiswillKato/SiFM/main/sifm.php -o /
 # SIFM_READONLY, its refusal message and the dispatch block (multi
 # reassigned only from ?folder=; ?multi= stays direct); the login
 # throttle (private per-UID temp dir, unconditional credential compare);
+# the ?view handler (inline streaming, nosniff/sandbox headers) and
+# preview/"open" URLs routed through it instead of direct file_url();
 # file_url(); then the hardening in abs(), import() (resolve-once,
 # connect-pinned), SIFM_BLOCKED_SERVER_FILES / the extended
 # SIFM_BLOCKED_UPLOAD_EXTENSIONS and their guards on every write path,
